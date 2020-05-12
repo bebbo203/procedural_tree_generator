@@ -47,13 +47,13 @@ int main(void)
   
 
   std::vector<vec3f> cloud;
-  auto starting_point = vec3f{0.5, 0.5, 0.0};
+  auto starting_point = vec3f{2, 2, 0.0};
 
   
   for(int i=0; i<500; i++)
   {
-    auto p = rand3f(rng);
-    if(0.25 > pow(p.x - 0.5 , 2.0) + pow(p.y - 0.5, 2.0) + pow(p.z - 0.5, 2.0)  )
+    auto p = rand3f(rng) * 5.0;
+    if(3 > pow(p.x - 2 , 2.0) + pow(p.y - 2, 2.0) + pow(p.z - 1, 2.0)  )
     { 
       cloud += p;
     }
@@ -69,7 +69,7 @@ int main(void)
   tree_nodes += 0;
 
   float D = 0.1;
-  while(tree_nodes.size() < 50)
+  while(tree_nodes.size() < 2000)
   {
     auto nodes_to_be_added = std::vector<int>();
     for(auto node: tree_nodes)
@@ -120,7 +120,8 @@ int main(void)
     if(nodes_to_be_added.empty())
       break;
     else
-      tree_nodes += nodes_to_be_added;
+      nodes_to_be_added += tree_nodes;
+      tree_nodes = nodes_to_be_added;
     
     
 
