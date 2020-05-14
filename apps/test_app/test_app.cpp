@@ -34,7 +34,7 @@ std::vector<int> get_influence_sphere(vec3f center, std::vector<vec3f>& attracto
 
 void cylinder_try(std::vector<vec4i>& quads, std::vector<vec3f>& positions,
     std::vector<vec3f>& normals, std::vector<vec2f>& texcoords,
-    const vec3i& steps, const vec2f& scale, const vec3f& uvscale, const frame3f& frame) {
+    const vec3i& steps, const vec2f& scale, const vec3f& uvscale, const frame3f& frame, const float R=0) {
   auto qquads     = std::vector<vec4i>{};
   auto qpositions = std::vector<vec3f>{};
   auto qnormals   = std::vector<vec3f>{};
@@ -43,11 +43,27 @@ void cylinder_try(std::vector<vec4i>& quads, std::vector<vec3f>& positions,
   // side
   make_rect(qquads, qpositions, qnormals, qtexcoords, {steps.x, steps.y},
       {1, 1}, {1, 1});
+  
+  std::cout << "we are in############################################\n";
+  auto big = 1;
+  auto little = 0.5;
   for (auto i = 0; i < qpositions.size(); i++) {
     auto uv       = qtexcoords[i];
     auto phi      = 2 * pif * uv.x;
+    
     qpositions[i] = {
         yocto::math::cos(phi) * scale.x, yocto::math::sin(phi) * scale.x, (2 * uv.y - 1) * scale.y};
+    //std::cout << qpositions[i].x << " | " << qpositions[i].y << " | " << (qpositions[i].z + scale.y) / (scale.y*2) << "\n";
+
+    
+
+    
+    auto norm_z = yocto::math::abs((qpositions[i].z - scale.y));
+    auto s = (R * norm_z) / scale.y;
+    qpositions[i].x = yocto::math::cos(phi) * (scale.x + s);
+    qpositions[i].y = yocto::math::sin(phi) * (scale.x + s);
+    
+
     qnormals[i]   = {yocto::math::cos(phi), yocto::math::sin(phi), 0};
     qtexcoords[i] = uv * vec2f{uvscale.x, uvscale.y};
 
@@ -56,10 +72,12 @@ void cylinder_try(std::vector<vec4i>& quads, std::vector<vec3f>& positions,
     qnormals[i] = transform_vector(frame, qnormals[i]);
   }
 
-
+  
   merge_quads(quads, positions, normals, texcoords, qquads, qpositions,
       qnormals, qtexcoords);
   
+ 
+
 }
 
 float branches_depth(std::vector<vec2i> lines, std::vector<int> branches, vec2i start_line)
@@ -172,7 +190,7 @@ int main(void)
 
   
   float D = 0.3;
-  while(tree_nodes.size() < 50)
+  while(tree_nodes.size() < 250)
   {
     auto nodes_to_be_added = std::vector<int>();
     for(auto node: tree_nodes)
@@ -234,56 +252,60 @@ int main(void)
  
 
  
-  auto cquads = std::vector<vec4i>();
-  auto cpositions = std::vector<vec3f>();
-  auto cnormals = std::vector<vec3f>();
-  auto ctexcoords = std::vector<vec2f>();
+ 
 
   auto new_positions = positions;
   positions.clear();
   quads.clear();
   
 
+  auto width_vector = std::vector<std::vector<float>>(tree_nodes.size());
+  for(auto& r: width_vector)
+    r = std::vector<float>(tree_nodes.size(), -1);
+
+  for(auto l: lines)
+  {
+    width_vector[l[0]][l[1]] = branches_depth(lines, branches, l);
+  }
+
+
+  //Il cono lo allargo sotto eh
   
-  /*
+  auto k = 0.002f;
   for(auto l: lines)
   {
     auto x = new_positions[l[0]];
     auto x_ = new_positions[l[1]];
 
+    x.z -= D;
+    x_.z -= D;
     
-    auto width = branches_depth(lines, branches, l);
-    
-
+    //auto width = branches_depth(lines, branches, l);
+    auto width = width_vector[l[0]][l[1]];
     auto frame = frame_fromz(x, normalize(x_ - x));
 
+    auto acc = 0;
+    for(int i=0; i < tree_nodes.size(); i++)
+    {
+      if(width_vector[i][l[0]] != -1)
+      {
+        acc = width_vector[i][l[0]];
+        break;
+      }
+    }
+    if(acc == 0)
+      acc = width;
+    
+
+    std::cout << (acc * k) - (width * k) <<"\n";  
+
+
+
     cylinder_try(quads, positions,
-    normals, texcoords, vec3i{8, 8, 8}, vec2f{0.005f * width, D/2}, vec3f{1.0, 1.0, 1.0}, frame);
+    normals, texcoords, vec3i{8, 8, 8}, vec2f{k * width, D/2}, vec3f{1.0, 1.0, 1.0}, frame, ((acc * k) - (width * k)) * 0.3 );
   }
-  */
   
-  quads.clear();
-  positions.clear();
-  cpositions.clear();
-  cquads.clear();
-  normals.clear();
-  cnormals.clear();
-  ctexcoords.clear();
-  texcoords.clear();
-  lines.clear();
-  cylinder_try(quads, positions,
-    normals, texcoords, vec3i{8, 8, 8}, vec2f{-1, -2}, vec3f{1.0, 1.0, 1.0}, frame_fromz(vec3f{0,0,0}, vec3f{0,0,1}));
-
-  cylinder_try(cquads, cpositions,
-    cnormals, ctexcoords, vec3i{8, 8, 8}, vec2f{-1, -2}, vec3f{1.0, 1.0, 1.0}, frame_fromz(vec3f{0,0,8}, vec3f{0,1,1}));
-
-  auto merge_verts = (int)positions.size() - 9;
-  for (auto& q : cquads)
-    quads += q + merge_verts;
-  positions.insert(
-      positions.end(), cpositions.begin(), cpositions.end());
-
-
+  
 
 
 
@@ -293,8 +315,9 @@ int main(void)
   std::cout << "Quads:     " << quads.size() << "\n";
   std::cout << "Tree Nodes:  " << tree_nodes.size() << "\n";
 
-  normals.clear();
-  texcoords.clear();
+
+  //cylinder_try(quads, positions,
+  //  normals, texcoords, vec3i{8, 8, 8}, vec2f{0.1, 0.2}, vec3f{1.0, 1.0, 1.0}, frame_fromz(vec3f{0,0,0}, vec3f{0,0,1}), -0.1);
   
   
   bool ok = save_shape("test.obj",
