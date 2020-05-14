@@ -55,13 +55,69 @@ void cylinder_try(std::vector<vec4i>& quads, std::vector<vec3f>& positions,
     qpositions[i] = transform_point(frame, qpositions[i]);
     qnormals[i] = transform_vector(frame, qnormals[i]);
   }
+
+
   merge_quads(quads, positions, normals, texcoords, qquads, qpositions,
       qnormals, qtexcoords);
   
 }
 
-int branches_depth(std::vector<vec2i>& lines, int node)
+float branches_depth(std::vector<vec2i> lines, std::vector<int> branches, vec2i start_line)
 {
+  float acc = 0;
+  auto actual = std::vector<vec2i>();
+  actual += start_line;
+  int node;
+  float tot_acc = 0.0;
+  double n = 1;
+
+  if(branches[start_line.y] == 1)
+  {
+    auto succ = -1;
+    for(int i=0; i<lines.size(); i++)
+    {
+      if(lines[i].x == start_line.y)
+      {
+        succ = lines[i].y;
+        break;
+      }
+    }
+
+    if(succ == -1)
+      return 1;
+    
+    return branches_depth(lines, branches, vec2i{start_line.y, succ});
+  }
+  else
+  {
+    while(!actual.empty())
+    {
+      node = actual[0].y;
+      for(int i=0; i<lines.size(); i++)
+      {
+        if(lines[i].x == node)
+        {
+          if(branches[lines[i].y] > 0 )
+          {
+            actual += lines[i];
+            acc += pow((float)branches[lines[i].y], n);
+          }
+        }
+
+    }
+
+    tot_acc += pow(acc, 1/n); 
+    acc = 0;
+    actual.erase(actual.begin());
+
+    } 
+  }
+  
+
+
+  
+
+  return tot_acc == 0 ? 1 : tot_acc;
 
 }
 
@@ -88,14 +144,13 @@ int main(void)
   
 
   std::vector<vec3f> cloud, old_cloud;
-  auto starting_point = vec3f{1, 2, 0.0};
+  auto starting_point = vec3f{2, 2, 0.0};
 
   
   for(int i=0; i<100; i++)
   {
     auto p = rand3f(rng) * 20.0 - 10;
     if(2 > pow(p.x - 2 , 2.0) + pow(p.y - 2, 2.0) + pow(p.z - 2, 2.0)  )
-    //if( pow(p.x * p.x + p.y * p.y, 0.5) < f(p.z))
     { 
       p.z += 0;
       cloud += p;
@@ -110,14 +165,14 @@ int main(void)
   auto tree_nodes = std::vector<int>();
   auto attractors = std::vector<int>();
   auto dead_attractors = std::vector<int>();
-  auto branches = std::vector<int>(20, 0);
+  auto branches = std::vector<int>(200, 0);
 
   positions += starting_point;
   tree_nodes += 0;
 
   
-  float D = 0.2;
-  while(tree_nodes.size() < 10)
+  float D = 0.3;
+  while(tree_nodes.size() < 50)
   {
     auto nodes_to_be_added = std::vector<int>();
     for(auto node: tree_nodes)
@@ -161,7 +216,7 @@ int main(void)
       }
 
       cloud = std::vector<vec3f>(new_cloud);
-      std::cout << new_cloud.size() << "\n";std::reverse(lines.begin(), lines.end())
+      std::cout << new_cloud.size() << "\n";std::reverse(lines.begin(), lines.end());
     }
 
     if(nodes_to_be_added.empty())
@@ -188,33 +243,46 @@ int main(void)
   positions.clear();
   quads.clear();
   
-  std::cout << "Tree nodes: \n";
-  for(auto x: branches)
-  {
-    std::cout << x << "\n";
-  }
+
   
+  /*
   for(auto l: lines)
   {
     auto x = new_positions[l[0]];
     auto x_ = new_positions[l[1]];
 
+    
+    auto width = branches_depth(lines, branches, l);
+    
+
     auto frame = frame_fromz(x, normalize(x_ - x));
 
     cylinder_try(quads, positions,
-    normals, texcoords, vec3i{4, 4, 4}, vec2f{0.01, D/2}, vec3f{1.0, 1.0, 1.0}, frame);
-
-    
-    
-
+    normals, texcoords, vec3i{8, 8, 8}, vec2f{0.005f * width, D/2}, vec3f{1.0, 1.0, 1.0}, frame);
   }
+  */
   
-  
-  
+  quads.clear();
+  positions.clear();
+  cpositions.clear();
+  cquads.clear();
+  normals.clear();
+  cnormals.clear();
+  ctexcoords.clear();
+  texcoords.clear();
+  lines.clear();
+  cylinder_try(quads, positions,
+    normals, texcoords, vec3i{8, 8, 8}, vec2f{-1, -2}, vec3f{1.0, 1.0, 1.0}, frame_fromz(vec3f{0,0,0}, vec3f{0,0,1}));
 
+  cylinder_try(cquads, cpositions,
+    cnormals, ctexcoords, vec3i{8, 8, 8}, vec2f{-1, -2}, vec3f{1.0, 1.0, 1.0}, frame_fromz(vec3f{0,0,8}, vec3f{0,1,1}));
 
+  auto merge_verts = (int)positions.size() - 9;
+  for (auto& q : cquads)
+    quads += q + merge_verts;
+  positions.insert(
+      positions.end(), cpositions.begin(), cpositions.end());
 
-  
 
 
 
@@ -225,11 +293,13 @@ int main(void)
   std::cout << "Quads:     " << quads.size() << "\n";
   std::cout << "Tree Nodes:  " << tree_nodes.size() << "\n";
 
-
+  normals.clear();
+  texcoords.clear();
+  
   
   bool ok = save_shape("test.obj",
     points, lines,
-    std::vector<vec3i>(),  quads,
+    std::vector<vec3i>(), quads,
     positions, normals,
     texcoords, colors,
     std::vector<float>(), error, true,
