@@ -19,9 +19,12 @@ std::vector<int> get_influence_sphere(vec3f center, std::vector<vec3f>& attracto
   for(int i=0; i<attractors.size(); i++)
   { 
     auto p = attractors[i];
-    if(radius > pow(p.x - center.x, 2.0)+ pow(p.y - center.y, 2.0) + pow(p.z - center.z, 2.0))
+
+    //std::cout << pow(p.x - center.x, 2.0) + pow(p.y - center.y, 2.0) + pow(p.z - center.z, 2.0) << " | " << distance(center, p) << " ---> " << radius << "\n";
+       
+    if(distance(center, p) < radius)
     {
-      influencers += i;  
+       influencers += i;  
     }
   }
 
@@ -143,11 +146,14 @@ float branches_depth(std::vector<vec2i> lines, std::vector<int> branches, vec2i 
   actual += start_line;
   int node;
   float tot_acc = 0.0;
-  double n = 1;
+  double n = 2.5;
 
+  // If the branch continues without subdividing in little branches 
+  // the width is the same as the one of the following branches
   if(branches[start_line.y] == 1)
   {
     auto succ = -1;
+    // Find the end of the next branch
     for(int i=0; i<lines.size(); i++)
     {
       if(lines[i].x == start_line.y)
@@ -160,33 +166,41 @@ float branches_depth(std::vector<vec2i> lines, std::vector<int> branches, vec2i 
     if(succ == -1)
       return 1;
     
+    // Recursive call to find the width of the succesive branch
     return branches_depth(lines, branches, vec2i{start_line.y, succ});
   }
   else
   {
     while(!actual.empty())
     {
+      
       node = actual[0].y;
+      // Find all the branches that starts from node 
       for(int i=0; i<lines.size(); i++)
       {
+        // If this is the line that starts from node
         if(lines[i].x == node)
         {
+          // If this line generates at least one branch
           if(branches[lines[i].y] > 0 )
           {
+            // At the nex iteration continue with this path
             actual += lines[i];
             acc += pow((float)branches[lines[i].y], n);
           }
         }
 
-    }
+      }
 
-    tot_acc += pow(acc, 1/n); 
-    acc = 0;
-    actual.erase(actual.begin());
+      tot_acc += acc; 
+      acc = 0;
+      actual.erase(actual.begin());
 
     } 
   }
   
+  // Maybe do I need to n-root when I accumulate?
+  tot_acc = pow(tot_acc, 1/n);
   return tot_acc == 0 ? 1 : tot_acc;
 
 }
@@ -197,7 +211,7 @@ float f(float x)
 }
 
 
-std::vector<vec3f> attractors_generator(int points_number, int range_min, int range_max, int z_offset, float f(float), rng_state& rng)
+std::vector<vec3f> attractors_generator(int points_number, float range_min, float range_max, float z_offset, float f(float), rng_state& rng)
 {
   std::vector<vec3f> cloud;
   
@@ -205,8 +219,9 @@ std::vector<vec3f> attractors_generator(int points_number, int range_min, int ra
   {
     auto p = (range_max - range_min) * rand3f(rng) + range_min;
     
-    if(3 > pow(p.x - 0 , 2.0) + pow(p.y - 0, 2.0) + pow(p.z - 2, 2.0)  )
-    //if(pow(p.x*p.x + p.y*p.y, 0.5) < f(p.z))
+    //if(2 > distance(p, vec3f{0,0,0})  )
+    if(pow(p.x*p.x + p.y*p.y, 0.5) < f(p.z))
+    //if(10 > pow(p.x - 0, 2.0) + pow(p.y, 2.0) && p.z > 1 && p.z < 3)
     {
       p.z += z_offset;
       cloud += p;
@@ -226,7 +241,7 @@ int main(void)
   std::cout << "On blender, Y forward, Z up.\n";
 
   std::vector<vec4i> quads; 
-  std::vector<vec3f> positions, attractors_postions;
+  std::vector<vec3f> positions, nodes_positions;
   std::vector<vec3f> normals;
   std::vector<vec2f> texcoords;
   std::vector<vec2i> lines;
@@ -241,49 +256,73 @@ int main(void)
   rng_state rng = make_rng(54);
   
   auto starting_point = vec3f{0, 0, 0};
+  auto initial_length = vec3f{0, 0, 1.4};
+  std::vector<vec3f> cloud = attractors_generator(10000, -20, 20 , 1,  f, rng);
   
-  std::vector<vec3f> cloud = attractors_generator(250, -3, 3, 0, f, rng);
-  
-  attractors_postions += starting_point;
+  nodes_positions += starting_point;
+  nodes_positions += initial_length;
   tree_nodes += 0;
+  tree_nodes += 1;
+
+  lines += vec2i{0, 1};
 
   //Tree's nodes generation
-  int max_nodes = 100;
-  float D = 0.4;
-  float max_influece_sphere = 5*D;
-  float max_killing_radius = 3*D;
+  int max_nodes = 700;
+  float D = 0.2;
+  float W = 0.005;
+  float max_influence_sphere = 5*D;
+  float max_killing_radius = 3.5*D;
+  vec3f tropism = vec3f{0, 0, 0};
   
-  auto branches = std::vector<int>(max_nodes+1, 0);
+  auto branches = std::vector<int>(max_nodes+2, 0);
+  branches[0] += 1;
+  
+  /*
+  for(auto& p: cloud)
+  {
+    if(distance(p, vec3f{0,0,1}) <= 1)
+    //if(1 > pow(p.x - 1, 2.0) + pow(p.y - 1, 2.0) + pow(p.z - 0, 2.0))
+    {
+      positions += p;
+      points += (int)positions.size() -1;
+    }
+  }
+  */
+
+
   while(tree_nodes.size() < max_nodes)
   {
     
+   
     auto nodes_to_be_added = std::vector<int>();
     for(auto node: tree_nodes)
     {
-     
-      if(tree_nodes.size() > 1 && node == 0)
+      
+      if(node == 0 || branches[node] >= 3)
         continue;
       auto new_cloud = std::vector<vec3f>();
-      auto v = attractors_postions[node];
+      auto v = nodes_positions[node];
 
-      auto attractors = get_influence_sphere(v, cloud, max_influece_sphere);
+      auto attractors = get_influence_sphere(v, cloud, max_influence_sphere);
+      
+      
       if(attractors.empty())
         continue;
-      
+
       branches[node] += 1;
-      
       auto total_dir = zero3f;
       for(auto a: attractors)
       {
         auto s = cloud[a];
         total_dir += normalize(s - v);
       } 
-      total_dir = normalize(total_dir);
+      total_dir = normalize(total_dir + tropism);
+      
 
       auto v_prime = v + total_dir * D;
-
-      attractors_postions += v_prime;
-      int new_node = attractors_postions.size()-1;
+      
+      nodes_positions += v_prime;
+      int new_node = nodes_positions.size()-1;
 
       lines += vec2i{node, new_node};
       nodes_to_be_added += new_node;
@@ -303,7 +342,6 @@ int main(void)
       }
       
       cloud = new_cloud;
-    
     }
 
     if(nodes_to_be_added.empty())
@@ -324,7 +362,7 @@ int main(void)
 
   for(auto l: lines)
   {
-    auto max_width = 30;
+    auto max_width = 9999;
     auto t = branches_depth(lines, branches, l);
    
     width_vector[l[0]][l[1]] = t > max_width ? max_width : t;
@@ -333,18 +371,20 @@ int main(void)
 
   
   
-  auto k = 0.002f;
+  
   frame3f frame;
   for(auto l: lines)
   {
-    auto x = attractors_postions[l[0]];
-    auto x_ = attractors_postions[l[1]];
+    auto x = nodes_positions[l[0]];
+    auto x_ = nodes_positions[l[1]];
 
-   
+    auto length = distance(x_, x);
     
 
     auto width = width_vector[l[0]][l[1]];
     frame = frame_fromz(x, normalize(x_ - x));
+
+
 
     auto base_width = width;
     for(int i=0; i < tree_nodes.size(); i++)
@@ -358,14 +398,16 @@ int main(void)
 
     
     //Used to mantain a certain armony within the small branches
-    auto max_base_width = 5;
+    auto max_base_width = 999999;
 
     base_width = (base_width - width);
-    if(base_width > width * max_base_width)
-      base_width = max_base_width*width;
+    //if(base_width > width * max_base_width)
+    std::cout << width << " | " << base_width << " | " << max_base_width << "\n"; 
+    if(base_width > max_base_width)
+      base_width = max_base_width;
 
     cylinder_try(quads, positions,
-    normals, texcoords, vec3i{8, 8, 8}, vec2f{k * width, D/2}, vec3f{0.5, 0.5, 1.0}, frame, base_width * k );
+    normals, texcoords, vec3i{8, 8, 8}, vec2f{W * width, length/2}, vec3f{0.5, 0.5, 1.0}, frame, base_width * W );
 
     
   
@@ -374,7 +416,7 @@ int main(void)
 
     auto leaves_density_min = 8;
     auto leaves_density_max = 15;
-    auto leaf_size = 0.1;
+    auto leaf_size = 0.001;
     if(width == 1)
     {
       int how_much = (leaves_density_max -  leaves_density_min) * rand1f(rng) +  leaves_density_min; 
@@ -386,11 +428,11 @@ int main(void)
         auto leaf_position = x + p * (x_ - x);
         
         auto a = 1;
-        auto k = 2;
+        auto k_ = 2;
         auto e = 2.7;
         p = 9 * pif * p ;
-        float X = a * pow(e, k*p) * yocto::math::cos(p); 
-        float Y = a * pow(e, k*p) * yocto::math::sin(p); 
+        float X = a * pow(e, k_*p) * yocto::math::cos(p); 
+        float Y = a * pow(e, k_*p) * yocto::math::sin(p); 
       
 
         
@@ -403,7 +445,6 @@ int main(void)
         leaf_frame.y = transform_vector(random_rotation, leaf_frame.y);
         leaf_frame.z = transform_vector(random_rotation, leaf_frame.z);
         
-        //auto leaf_frame = frame_fromzx(leaf_position, i%2==1 ? vec3f{0.5, 0.5,  1} : vec3f{-0.5, -0.5, 1}, x_alternate);
         quad_try(quads, positions, normals, texcoords, leaf_size, leaf_frame);
       }
 
@@ -416,13 +457,15 @@ int main(void)
 
   if(false)
   {
-    positions.clear();
+    //positions.clear();
     quads.clear();
     normals.clear();
     texcoords.clear();
+    lines.clear();
+    
 
-    cylinder_try(quads, positions,
-      normals, texcoords, vec3i{8, 8, 8}, vec2f{0.5, 1}, vec3f{0.5, 0.5, 1.0}, frame_fromz(vec3f{1,1,0}, vec3f{0,0,1}), 1 );
+    //cylinder_try(quads, positions,
+    //  normals, texcoords, vec3i{8, 8, 8}, vec2f{0.5, 1}, vec3f{0.5, 0.5, 1.0}, frame_fromz(vec3f{1,1,0}, vec3f{0,0,1}), 1 );
   }
   
   
@@ -430,7 +473,9 @@ int main(void)
   std::cout << "Points:    " << points.size() << "\n";
   std::cout << "Lines:     " << lines.size() << "\n";
   std::cout << "Quads:     " << quads.size() << "\n";
+  std::cout << "Alive att :  " << cloud.size() << "\n";
   std::cout << "Tree Nodes:  " << tree_nodes.size() << "\n";
+
 
 
   
