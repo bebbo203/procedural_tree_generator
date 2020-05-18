@@ -125,7 +125,7 @@ void quad_try(std::vector<vec4i>& quads, std::vector<vec3f>& positions,
   auto quad_normals = std::vector<vec3f>{
       {0, 0, 1}, {0, 0, 1}, {0, 0, 1}, {0, 0, 1}};
   auto quad_texcoords = std::vector<vec2f>{
-      {0.5, 0.5}, {1, 0.5}, {1, 1}, {0.5, 1}};
+      {0, 0}, {1, 0}, {1, 1}, {0, 1}};
   auto quad_quads = std::vector<vec4i>{{0, 1, 2, 3}};
 
 
@@ -238,17 +238,16 @@ std::vector<vec3f> attractors_generator(int points_number, float range_min, floa
 }
 
 
-void scene_insert(yocto::sceneio::model* scene, std::string name, std::vector<vec4i>& quads, std::vector<vec3f>& positions,
+void create_shape(shape* shape, std::vector<vec4i>& quads, std::vector<vec3f>& positions,
                   std::vector<vec3f>& normals, std::vector<vec2f>& texcoords)
 {
-  auto shape = new yocto::sceneio::shape{name};
-  shape->name = name;
-  shape->quads = quads;
-  shape->positions = positions;
-  shape->normals = normals;
-  shape->texcoords = texcoords;
+  
+  shape->quads += quads;
+  shape->positions += positions;
+  shape->normals += normals;
+  shape->texcoords += texcoords;
+  
 
-  add_shape(scene, shape->name);
 }
 
 int main(void)
@@ -262,7 +261,7 @@ int main(void)
   std::vector<vec2f> texcoords, leaf_texcoords, tree_texcoords;
   std::vector<vec2i> lines;
   std::vector<int> points;
-  std::vector<vec3f> colors;
+  
   std::string error;
   auto tree_nodes = std::vector<int>();
   
@@ -272,18 +271,18 @@ int main(void)
   rng_state rng = make_rng(54);
   
   auto starting_point = vec3f{0, 0, 0};
-  auto initial_length = vec3f{0, 0, 1.4};
+  auto initial_length = vec3f{0.0, 0.0, 1};
   std::vector<vec3f> cloud = attractors_generator(10000, -20, 20 , 8,  f, rng);
   
   nodes_positions += starting_point;
-  nodes_positions += initial_length;
+  //nodes_positions += initial_length;
   tree_nodes += 0;
-  tree_nodes += 1;
+  //tree_nodes += 1;
 
-  lines += vec2i{0, 1};
+  //lines += vec2i{0, 1};
 
   //Tree's nodes generation
-  int max_nodes = 250;
+  int max_nodes = 100;
   float D = 0.2;
   float W = 0.005;
   float max_influence_sphere = 5*D;
@@ -305,16 +304,39 @@ int main(void)
   }
   */
 
+  
+  // A loop that generates the trunk of the tree, approximating the initial value given by the user 
+  // (Large approximation to avoid an infinite loop)
+  float dist = 9999;
+  while(dist > D/4)
+  {
+    auto a = initial_length;
+    auto b = nodes_positions[tree_nodes.size()-1];
+    auto dir = normalize(a-b);
+    //std::cout << dir.x << "," << dir.y << "," << dir.z << "\n";
+    auto new_node = b + dir * D;
+    
+    nodes_positions += new_node;
+    tree_nodes += (int)nodes_positions.size()-1;
+    branches[nodes_positions.size()-1] += 1;
+    lines += {(int)tree_nodes.size()-2, (int)tree_nodes.size()-1};
+    dist = distance(new_node, initial_length);
+    //std::cout << new_node.x << "|" << new_node.y << "|" << new_node.x << " | " << dist << "\n";
+  }
 
+  auto forbidden_node = (int)tree_nodes.size() - 1;
+  
   while(tree_nodes.size() < max_nodes)
   {
     
-   
     auto nodes_to_be_added = std::vector<int>();
+
+    
+
     for(auto node: tree_nodes)
     {
       
-      if(node == 0 || branches[node] >= 3)
+      if(node < forbidden_node || branches[node] >= 3)
         continue;
       auto new_cloud = std::vector<vec3f>();
       auto v = nodes_positions[node];
@@ -417,8 +439,7 @@ int main(void)
     auto max_base_width = width * 3;
 
     base_width = (base_width - width);
-    //if(base_width > width * max_base_width)
-    //std::cout << width << " | " << base_width << " | " << max_base_width << "\n"; 
+
     if(base_width > max_base_width)
       base_width = max_base_width;
 
@@ -426,10 +447,8 @@ int main(void)
     vec2f scale = vec2f{W * width, length/2};
     vec3f uv_scale = vec3f{W*width, length/2, 1};
 
-    if(W *width * 2 * pif >= length )
-      uv_scale = {1, (length) / (W * width*2*pif), 1};
-    else
-      uv_scale = {(W*width*2*pif) / (length), 1,  1};
+
+    uv_scale = {width*2*pif / 64, 1  ,1};
 
     cylinder_try(tree_quads, tree_positions,
     tree_normals, tree_texcoords, vec3i{8, 8, 8}, scale, uv_scale , frame, base_width * W );
@@ -437,12 +456,13 @@ int main(void)
     
   
   
-    //Try to add leaves
+    // Add leaves to the last branches: the majority of trees have leaves only on
+    // branches that don't have sons.
 
     auto leaves_density_min = 8;
     auto leaves_density_max = 15;
     auto leaf_size = 0.1;
-    if(width < 0)
+    if(width == 1)
     {
       int how_much = (leaves_density_max -  leaves_density_min) * rand1f(rng) +  leaves_density_min; 
       for(int i=0; i<how_much; i++)
@@ -494,34 +514,88 @@ int main(void)
   }
   
   
-  std::cout << "Positions: " << positions.size() << "\n";
+  std::cout << "Positions: " << tree_positions.size() << "\n";
   std::cout << "Points:    " << points.size() << "\n";
   std::cout << "Lines:     " << lines.size() << "\n";
-  std::cout << "Quads:     " << quads.size() << "\n";
+  std::cout << "Quads:     " << tree_quads.size() << "\n";
   std::cout << "Alive att :  " << cloud.size() << "\n";
   std::cout << "Tree Nodes:  " << tree_nodes.size() << "\n";
 
+  //Scene preparation
 
   auto final_scene = new model();
-  scene_insert(final_scene, "tree", tree_quads, tree_positions, tree_normals, tree_texcoords);
-  scene_insert(final_scene, "leaves", leaf_quads, leaf_positions, leaf_normals, leaf_texcoords);
+  
+    //Generate the shapes (only two)
+  auto tree_shape = add_shape(final_scene);
+  tree_shape -> name = "tree";
+  create_shape(tree_shape, tree_quads, tree_positions, tree_normals, tree_texcoords);
+  auto leaf_shape = add_shape(final_scene);
+  leaf_shape -> name = "leaves";
+  create_shape(leaf_shape, leaf_quads, leaf_positions, leaf_normals, leaf_texcoords);
+  
+  
+
 
   
-  /*
-  bool ok = save_shape("test.obj",
-    points, lines,
-    std::vector<vec3i>(), quads,
-    positions, normals,
-    texcoords, colors,
-    std::vector<float>(), error, true,
-    false);
-  */
+  //Load textures
+  auto tree_txt = add_texture(final_scene);
+  auto tree_img = yocto::image::image<vec3b>();
+  std::string name = "resources/exports/tree.png";
+  if(!yocto::image::load_image(name, tree_img, error))
+    std::cout << "image load error: " << error << "\n";
+  tree_txt -> colorb = tree_img;
+  tree_txt -> name = "tree.png";
+
+  auto leaf_txt = add_texture(final_scene);
+  auto leaf_img = yocto::image::image<vec3b>();
+  name = "resources/exports/leaf.png";
+  if(!yocto::image::load_image(name, leaf_img, error))
+    std::cout << "image load error: " << error << "\n";
+  leaf_txt -> colorb = leaf_img;
+  leaf_txt -> name = "leaf.png";
+  
+  //Prepare material
+  auto tree_material = add_material(final_scene);
+  tree_material->roughness = 1;
+  tree_material->color_tex = tree_txt;
+  tree_material->color = vec3f{1,1,1};
+  
+
+  auto leaf_material = add_material(final_scene);
+  leaf_material->roughness = 1;
+  leaf_material->color_tex = leaf_txt;
+  leaf_material->color = vec3f{1,1,1};
+ 
+
+  //Prepare objects
+  auto tree_obj = add_object(final_scene);
+  tree_obj -> shape = tree_shape;
+  tree_obj -> material = tree_material;
+  tree_obj -> frame = frame3f{vec3f{0,0,1}, vec3f{1,0,0}, vec3f{0,1,0}, vec3f{0,0,0}};
+  
+
+  auto leaf_obj = add_object(final_scene);
+  leaf_obj -> shape = leaf_shape;
+  leaf_obj -> material = leaf_material;
+  leaf_obj -> frame = frame3f{vec3f{0,0,1}, vec3f{1,0,0}, vec3f{0,1,0}, vec3f{0,0,0}};
+
+  //Simple camera
+  auto cam = add_camera(final_scene);
+  cam->frame = frame_fromz(vec3f{-10,2,0}, vec3f{-5,0,0});
+  
+  //Simple environment 
+  auto env = add_environment(final_scene);
+  env->emission = vec3f{0.6,0.4,0.4};
+  
+  bool ok = save_scene("resources/exports/test.obj", final_scene, error);
+  
+
   
 
   if(error == "")
     std::cout << "You're lucky, no errors!" << "\n";
   else
-    std::cout << "Error: "<< error <<"\n";
+    std::cout << "Save error: "<< error <<"\n";
 
   
 }
