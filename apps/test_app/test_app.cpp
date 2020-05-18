@@ -3,10 +3,13 @@
 #include <yocto/yocto_shape.h>
 #include <yocto/yocto_common.h>
 #include <yocto/yocto_math.h>
+#include <yocto/yocto_sceneio.h>
+#include <yocto/yocto_shape.h>
 #include <math.h>
 using namespace yocto::math;
 using namespace yocto::shape;
 using namespace yocto::common;
+using namespace yocto::sceneio;
 
 
 
@@ -74,9 +77,10 @@ void cylinder_try(std::vector<vec4i>& quads, std::vector<vec3f>& positions,
       {1, 1}, {1, 1});
   
   
-  sphere_try(squads, spositions, snormals, stexcoords, vec2i{steps.x,steps.y}, scale.x + R, vec2f{uvscale.x,uvscale.y}, vec3f{0,0,0});
-  squads.erase(squads.begin(), squads.begin() + squads.size()/2);
+  //sphere_try(squads, spositions, snormals, stexcoords, vec2i{steps.x,steps.y}, scale.x + R, vec2f{uvscale.x,uvscale.y}, vec3f{0,0,0});
+  //
   sphere_try(squads, spositions, snormals, stexcoords, vec2i{steps.x,steps.y}, scale.x, vec2f{uvscale.x,uvscale.y}, vec3f{0,0,scale.y*2}) ;
+  squads.erase(squads.begin() + squads.size()/2 , squads.end());
 
   for( auto i=0; i< spositions.size(); i++)
   {
@@ -146,7 +150,7 @@ float branches_depth(std::vector<vec2i> lines, std::vector<int> branches, vec2i 
   actual += start_line;
   int node;
   float tot_acc = 0.0;
-  double n = 2.5;
+  double n = 2.05;
 
   // If the branch continues without subdividing in little branches 
   // the width is the same as the one of the following branches
@@ -219,9 +223,9 @@ std::vector<vec3f> attractors_generator(int points_number, float range_min, floa
   {
     auto p = (range_max - range_min) * rand3f(rng) + range_min;
     
-    //if(2 > distance(p, vec3f{0,0,0})  )
-    if(pow(p.x*p.x + p.y*p.y, 0.5) < f(p.z))
-    //if(10 > pow(p.x - 0, 2.0) + pow(p.y, 2.0) && p.z > 1 && p.z < 3)
+    if(distance(p, vec3f{0,0,0}) < 8)
+    //if(pow(p.x*p.x + p.y*p.y, 0.5) < f(p.z))
+    //if(10 > pow(p.x - 0, 2.0) + pow(p.y, 2.0) && p.z > 1 && p.z < 8)
     {
       p.z += z_offset;
       cloud += p;
@@ -234,16 +238,28 @@ std::vector<vec3f> attractors_generator(int points_number, float range_min, floa
 }
 
 
+void scene_insert(yocto::sceneio::model* scene, std::string name, std::vector<vec4i>& quads, std::vector<vec3f>& positions,
+                  std::vector<vec3f>& normals, std::vector<vec2f>& texcoords)
+{
+  auto shape = new yocto::sceneio::shape{name};
+  shape->name = name;
+  shape->quads = quads;
+  shape->positions = positions;
+  shape->normals = normals;
+  shape->texcoords = texcoords;
+
+  add_shape(scene, shape->name);
+}
 
 int main(void)
 {
   std::cout << "Hello, yocto!\n";
   std::cout << "On blender, Y forward, Z up.\n";
 
-  std::vector<vec4i> quads; 
-  std::vector<vec3f> positions, nodes_positions;
-  std::vector<vec3f> normals;
-  std::vector<vec2f> texcoords;
+  std::vector<vec4i> quads, leaf_quads, tree_quads; 
+  std::vector<vec3f> positions, nodes_positions, leaf_positions, tree_positions;
+  std::vector<vec3f> normals, leaf_normals, tree_normals;
+  std::vector<vec2f> texcoords, leaf_texcoords, tree_texcoords;
   std::vector<vec2i> lines;
   std::vector<int> points;
   std::vector<vec3f> colors;
@@ -257,7 +273,7 @@ int main(void)
   
   auto starting_point = vec3f{0, 0, 0};
   auto initial_length = vec3f{0, 0, 1.4};
-  std::vector<vec3f> cloud = attractors_generator(10000, -20, 20 , 1,  f, rng);
+  std::vector<vec3f> cloud = attractors_generator(10000, -20, 20 , 8,  f, rng);
   
   nodes_positions += starting_point;
   nodes_positions += initial_length;
@@ -267,7 +283,7 @@ int main(void)
   lines += vec2i{0, 1};
 
   //Tree's nodes generation
-  int max_nodes = 700;
+  int max_nodes = 250;
   float D = 0.2;
   float W = 0.005;
   float max_influence_sphere = 5*D;
@@ -362,7 +378,7 @@ int main(void)
 
   for(auto l: lines)
   {
-    auto max_width = 9999;
+    auto max_width = 50;
     auto t = branches_depth(lines, branches, l);
    
     width_vector[l[0]][l[1]] = t > max_width ? max_width : t;
@@ -398,16 +414,25 @@ int main(void)
 
     
     //Used to mantain a certain armony within the small branches
-    auto max_base_width = 999999;
+    auto max_base_width = width * 3;
 
     base_width = (base_width - width);
     //if(base_width > width * max_base_width)
-    std::cout << width << " | " << base_width << " | " << max_base_width << "\n"; 
+    //std::cout << width << " | " << base_width << " | " << max_base_width << "\n"; 
     if(base_width > max_base_width)
       base_width = max_base_width;
 
-    cylinder_try(quads, positions,
-    normals, texcoords, vec3i{8, 8, 8}, vec2f{W * width, length/2}, vec3f{0.5, 0.5, 1.0}, frame, base_width * W );
+    
+    vec2f scale = vec2f{W * width, length/2};
+    vec3f uv_scale = vec3f{W*width, length/2, 1};
+
+    if(W *width * 2 * pif >= length )
+      uv_scale = {1, (length) / (W * width*2*pif), 1};
+    else
+      uv_scale = {(W*width*2*pif) / (length), 1,  1};
+
+    cylinder_try(tree_quads, tree_positions,
+    tree_normals, tree_texcoords, vec3i{8, 8, 8}, scale, uv_scale , frame, base_width * W );
 
     
   
@@ -416,8 +441,8 @@ int main(void)
 
     auto leaves_density_min = 8;
     auto leaves_density_max = 15;
-    auto leaf_size = 0.001;
-    if(width == 1)
+    auto leaf_size = 0.1;
+    if(width < 0)
     {
       int how_much = (leaves_density_max -  leaves_density_min) * rand1f(rng) +  leaves_density_min; 
       for(int i=0; i<how_much; i++)
@@ -445,7 +470,7 @@ int main(void)
         leaf_frame.y = transform_vector(random_rotation, leaf_frame.y);
         leaf_frame.z = transform_vector(random_rotation, leaf_frame.z);
         
-        quad_try(quads, positions, normals, texcoords, leaf_size, leaf_frame);
+        quad_try(leaf_quads, leaf_positions, leaf_normals, leaf_texcoords, leaf_size, leaf_frame);
       }
 
 
@@ -457,15 +482,15 @@ int main(void)
 
   if(false)
   {
-    //positions.clear();
+    positions.clear();
     quads.clear();
     normals.clear();
     texcoords.clear();
     lines.clear();
     
 
-    //cylinder_try(quads, positions,
-    //  normals, texcoords, vec3i{8, 8, 8}, vec2f{0.5, 1}, vec3f{0.5, 0.5, 1.0}, frame_fromz(vec3f{1,1,0}, vec3f{0,0,1}), 1 );
+    cylinder_try(quads, positions,
+      normals, texcoords, vec3i{8, 8, 8}, vec2f{0.5, 1}, vec3f{0.5, 0.5, 1.0}, frame_fromz(vec3f{1,1,0}, vec3f{0,0,1}), 1 );
   }
   
   
@@ -477,9 +502,12 @@ int main(void)
   std::cout << "Tree Nodes:  " << tree_nodes.size() << "\n";
 
 
+  auto final_scene = new model();
+  scene_insert(final_scene, "tree", tree_quads, tree_positions, tree_normals, tree_texcoords);
+  scene_insert(final_scene, "leaves", leaf_quads, leaf_positions, leaf_normals, leaf_texcoords);
 
   
-  
+  /*
   bool ok = save_shape("test.obj",
     points, lines,
     std::vector<vec3i>(), quads,
@@ -487,13 +515,13 @@ int main(void)
     texcoords, colors,
     std::vector<float>(), error, true,
     false);
-
+  */
   
 
   if(error == "")
     std::cout << "You're lucky, no errors!" << "\n";
   else
-    std::cout << "Error"<< error <<"\n";
+    std::cout << "Error: "<< error <<"\n";
 
   
 }
