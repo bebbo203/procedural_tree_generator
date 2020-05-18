@@ -237,6 +237,23 @@ std::vector<vec3f> attractors_generator(int points_number, float range_min, floa
   return cloud;
 }
 
+yocto::image::image<vec3b> load_image_to_texture(std::string& img_path)
+{
+  std::string error;
+  auto img = yocto::image::image<vec3b>();
+  if(!yocto::image::load_image(img_path, img, error))
+    std::cout << "image load error: " << error << "\n";
+  return img;
+}
+
+yocto::image::image<byte> load_scalar_image_to_texture(std::string& img_path)
+{
+  std::string error;
+  auto img = yocto::image::image<byte>();
+  if(!yocto::image::load_image(img_path, img, error))
+    std::cout << "image load error: " << error << "\n";
+  return img;
+}
 
 void create_shape(shape* shape, std::vector<vec4i>& quads, std::vector<vec3f>& positions,
                   std::vector<vec3f>& normals, std::vector<vec2f>& texcoords)
@@ -539,42 +556,52 @@ int main(void)
   
   //Load textures
   auto tree_txt = add_texture(final_scene);
-  auto tree_img = yocto::image::image<vec3b>();
   std::string name = "resources/exports/tree.png";
-  if(!yocto::image::load_image(name, tree_img, error))
-    std::cout << "image load error: " << error << "\n";
+  auto tree_img = load_image_to_texture(name);
   tree_txt -> colorb = tree_img;
-  tree_txt -> name = "tree.png";
+  tree_txt -> name = "tree";
+
+  
 
   auto leaf_txt = add_texture(final_scene);
-  auto leaf_img = yocto::image::image<vec3b>();
   name = "resources/exports/leaf.png";
-  if(!yocto::image::load_image(name, leaf_img, error))
-    std::cout << "image load error: " << error << "\n";
+  auto leaf_img = load_image_to_texture(name);
   leaf_txt -> colorb = leaf_img;
-  leaf_txt -> name = "leaf.png";
+  leaf_txt -> name = "leaf";
+
+  auto leaf_opacity_txt = add_texture(final_scene);
+  name = "resources/exports/leaf_opacity.png";
+  auto leaf_opacity_img = load_scalar_image_to_texture(name);
+  leaf_opacity_txt->scalarb = leaf_opacity_img;
+  leaf_opacity_txt->name = "leaf_opacity";
   
-  //Prepare material
+  //Prepare materials
   auto tree_material = add_material(final_scene);
+  tree_material->name = "Wood_material";
   tree_material->roughness = 1;
   tree_material->color_tex = tree_txt;
   tree_material->color = vec3f{1,1,1};
   
 
   auto leaf_material = add_material(final_scene);
+  leaf_material->name = "Leaf_material";
   leaf_material->roughness = 1;
   leaf_material->color_tex = leaf_txt;
+  leaf_material->opacity_tex = leaf_opacity_txt;
+
   leaf_material->color = vec3f{1,1,1};
  
 
   //Prepare objects
   auto tree_obj = add_object(final_scene);
+  tree_obj -> name = "Tree_obj";
   tree_obj -> shape = tree_shape;
   tree_obj -> material = tree_material;
   tree_obj -> frame = frame3f{vec3f{0,0,1}, vec3f{1,0,0}, vec3f{0,1,0}, vec3f{0,0,0}};
   
 
   auto leaf_obj = add_object(final_scene);
+  leaf_obj -> name = "Leaf_obj";
   leaf_obj -> shape = leaf_shape;
   leaf_obj -> material = leaf_material;
   leaf_obj -> frame = frame3f{vec3f{0,0,1}, vec3f{1,0,0}, vec3f{0,1,0}, vec3f{0,0,0}};
@@ -585,9 +612,10 @@ int main(void)
   
   //Simple environment 
   auto env = add_environment(final_scene);
-  env->emission = vec3f{0.6,0.4,0.4};
+  env->emission = vec3f{0.4,0.4,0.4};
   
-  bool ok = save_scene("resources/exports/test.obj", final_scene, error);
+  // If you save in obj it will have an opacity texture
+  bool ok = save_scene("resources/exports/test.json", final_scene, error);
   
 
   
