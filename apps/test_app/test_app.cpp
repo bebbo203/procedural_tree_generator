@@ -82,10 +82,11 @@ void cylinder_try(std::vector<vec4i>& quads, std::vector<vec3f>& positions,
   sphere_try(squads, spositions, snormals, stexcoords, vec2i{steps.x,steps.y}, scale.x, vec2f{uvscale.x,uvscale.y}, vec3f{0,0,scale.y*2}) ;
   squads.erase(squads.begin() + squads.size()/2 , squads.end());
 
+
   for( auto i=0; i< spositions.size(); i++)
   {
     spositions[i] = transform_point(frame, spositions[i]);
-    snormals[i] = transform_vector(frame, snormals[i]);
+    snormals[i] = transform_vector(frame, -snormals[i]);
   }
 
   for (auto i = 0; i < qpositions.size(); i++) 
@@ -126,6 +127,7 @@ void quad_try(std::vector<vec4i>& quads, std::vector<vec3f>& positions,
       {0, 0, 1}, {0, 0, 1}, {0, 0, 1}, {0, 0, 1}};
   auto quad_texcoords = std::vector<vec2f>{
       {0, 0}, {1, 0}, {1, 1}, {0, 1}};
+      
   auto quad_quads = std::vector<vec4i>{{0, 1, 2, 3}};
 
 
@@ -281,7 +283,7 @@ int main(void)
   
   std::string error;
   auto tree_nodes = std::vector<int>();
-  bool single_object = false;
+  bool single_object = true;
   
 
 
@@ -464,22 +466,18 @@ int main(void)
     
     vec2f scale = vec2f{W * width, length/2};
     vec3f uv_scale = vec3f{W*width, length/2, 1};
-
-
-    uv_scale = {width*2*pif / 64, 1  ,1};
+    uv_scale = {width*pif / 32, 1  ,1};
 
     cylinder_try(tree_quads, tree_positions,
-    tree_normals, tree_texcoords, vec3i{8, 8, 8}, scale, uv_scale , frame, base_width * W );
-
-    
-  
+      tree_normals, tree_texcoords, vec3i{8, 8, 8}, scale, uv_scale , frame, base_width * W );
   
     // Add leaves to the last branches: the majority of trees have leaves only on
     // branches that don't have sons.
 
     auto leaves_density_min = 8;
     auto leaves_density_max = 15;
-    auto leaf_size = 0.1;
+    auto leaf_size_max = 0.1;
+    auto leaf_size_min = 0.05;
     if(width == 1)
     {
       int how_much = (leaves_density_max -  leaves_density_min) * rand1f(rng) +  leaves_density_min; 
@@ -497,7 +495,7 @@ int main(void)
         float X = a * pow(e, k_*p) * yocto::math::cos(p); 
         float Y = a * pow(e, k_*p) * yocto::math::sin(p); 
       
-
+        auto leaf_size = (leaf_size_max - leaf_size_min) * rand1f(rng) + leaf_size_min;
         
 
         frame3f leaf_frame;
@@ -509,6 +507,8 @@ int main(void)
         leaf_frame.z = transform_vector(random_rotation, leaf_frame.z);
         
         quad_try(leaf_quads, leaf_positions, leaf_normals, leaf_texcoords, leaf_size, leaf_frame);
+
+        
       }
 
 
@@ -517,6 +517,40 @@ int main(void)
   
   }
   
+  if(single_object)
+  {
+    //UV coordinates need to be changed: 
+
+    //Tree cordinates change: just divide by 2.
+    //Maybe some precision error?
+    float max = 0;
+    for(auto& uv: tree_texcoords)
+    {
+      uv.y /= 2.01;
+      uv.y += 1e-3;
+      max = uv.x > max ? uv.x : max;
+    }
+
+    for(auto& uv: tree_texcoords)
+    {
+      uv.x /= (max*2.01); 
+      uv.x += 1e-3;
+    }
+
+
+    for(auto i=0; i<leaf_texcoords.size(); i+=4)
+    {
+      auto tx = rand1f(rng);
+      for(auto j=0; j<4; j++)
+      {
+        leaf_texcoords[i+j] /= 2;
+        leaf_texcoords[i+j].x += 0.5;
+        leaf_texcoords[i+j].y += tx < 0.5 ? 0.5 : 0;
+      }
+
+    }
+
+  }
 
   if(false)
   {
@@ -568,13 +602,13 @@ int main(void)
     
 
     auto leaf_txt = add_texture(final_scene);
-    name = "resources/exports/leaf";
+    name = "resources/exports/leaf.png";
     auto leaf_img = load_image_to_texture(name);
     leaf_txt -> colorb = leaf_img;
     leaf_txt -> name = "leaf";
 
     auto leaf_opacity_txt = add_texture(final_scene);
-    name = "resources/exports/leaf_opacity";
+    name = "resources/exports/leaf_opacity.png";
     auto leaf_opacity_img = load_scalar_image_to_texture(name);
     leaf_opacity_txt->scalarb = leaf_opacity_img;
     leaf_opacity_txt->name = "leaf_opacity";
@@ -614,6 +648,7 @@ int main(void)
   else
   {
     //Here we have a single object with one texture. 
+    
     merge_quads(tree_quads, tree_positions, tree_normals, tree_texcoords, leaf_quads, leaf_positions, leaf_normals, leaf_texcoords);
 
     auto tree_shape = add_shape(final_scene);
@@ -627,9 +662,10 @@ int main(void)
     tree_txt -> name = "total";
 
     auto tree_material = add_material(final_scene);
-    tree_material->name = "Wood_material";
+    tree_material->name = "Tree_material";
     tree_material->roughness = 1;
     tree_material->color_tex = tree_txt;
+    
     tree_material->color = vec3f{1,1,1};
 
     auto tree_obj = add_object(final_scene);
@@ -643,7 +679,10 @@ int main(void)
 
   //Simple camera
   auto cam = add_camera(final_scene);
-  cam->frame = frame_fromz(vec3f{-10,2,0}, vec3f{-5,0.1,0.1});
+  //auto camera_frame = frame_fromz(vec3f{-10,2,0}, vec3f{-5,0.1,0.1});
+  auto camera_frame = lookat_frame(vec3f{-10, 2, 1}, vec3f{1,1,1}, vec3f{0,0,1});
+  cam->frame = camera_frame;
+  
   
   //Simple environment 
   auto env = add_environment(final_scene);
