@@ -283,7 +283,8 @@ int main(void)
   
   std::string error;
   auto tree_nodes = std::vector<int>();
-  bool single_object = true;
+  bool single_object = false;
+  int leaves_textures_number = 2;
   
 
 
@@ -551,6 +552,29 @@ int main(void)
     }
 
   }
+  else
+  {
+    //Nothing to do for the trunk but the leaves need to be subdivided in others shapes
+    auto leaf_positions_array = std::vector<std::vector<vec3f>>(2);
+    auto leaf_quads_array = std::vector<std::vector<vec4i>>(2);
+    auto leaf_normals_array = std::vector<std::vector<vec3f>>(2);
+    auto leaf_texcoords_array = std::vector<std::vector<vec2f>>(2);
+
+    auto quads_counter = 0;
+    for(int i=0; i<leaf_positions.size(); i+=4)
+    {
+      auto where = rand1f(rng) < 0.5 ? 1 : 0;
+      for(int j=0; j<4; j++)
+      {
+        leaf_positions_array[where] += leaf_positions[i+j];
+        leaf_normals_array[where] += leaf_normals[i+j];
+      }
+      leaf_texcoords_array[where] += leaf_texcoords[quads_counter++];
+      
+      
+    }
+  }
+  
 
   if(false)
   {
@@ -661,10 +685,17 @@ int main(void)
     tree_txt -> colorb = tree_img;
     tree_txt -> name = "total";
 
+    auto tree_opacity_txt = add_texture(final_scene);
+    name = "resources/exports/total_opacity.png";
+    auto tree_opacity_img = load_scalar_image_to_texture(name);
+    tree_opacity_txt -> scalarb = tree_opacity_img;
+    tree_opacity_txt -> name = "total_opacity";
+
     auto tree_material = add_material(final_scene);
     tree_material->name = "Tree_material";
     tree_material->roughness = 1;
     tree_material->color_tex = tree_txt;
+    tree_material->opacity_tex = tree_opacity_txt;
     
     tree_material->color = vec3f{1,1,1};
 
