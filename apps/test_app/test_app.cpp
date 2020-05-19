@@ -563,21 +563,21 @@ int main(void)
     std::string name = "resources/exports/tree.png";
     auto tree_img = load_image_to_texture(name);
     tree_txt -> colorb = tree_img;
-    tree_txt -> name = "tree.png";
+    tree_txt -> name = "tree";
 
     
 
     auto leaf_txt = add_texture(final_scene);
-    name = "resources/exports/leaf.png";
+    name = "resources/exports/leaf";
     auto leaf_img = load_image_to_texture(name);
     leaf_txt -> colorb = leaf_img;
-    leaf_txt -> name = "leaf.png";
+    leaf_txt -> name = "leaf";
 
     auto leaf_opacity_txt = add_texture(final_scene);
-    name = "resources/exports/leaf_opacity.png";
+    name = "resources/exports/leaf_opacity";
     auto leaf_opacity_img = load_scalar_image_to_texture(name);
     leaf_opacity_txt->scalarb = leaf_opacity_img;
-    leaf_opacity_txt->name = "leaf_opacity.png";
+    leaf_opacity_txt->name = "leaf_opacity";
     
 
 
@@ -594,9 +594,6 @@ int main(void)
     leaf_material->roughness = 1;
     leaf_material->color_tex = leaf_txt;
     leaf_material->opacity_tex = leaf_opacity_txt;
-
-
-
     leaf_material->color = vec3f{1,1,1};
   
 
@@ -614,6 +611,35 @@ int main(void)
     leaf_obj -> material = leaf_material;
     leaf_obj -> frame = frame3f{vec3f{0,0,1}, vec3f{1,0,0}, vec3f{0,1,0}, vec3f{0,0,0}};
   }
+  else
+  {
+    //Here we have a single object with one texture. 
+    merge_quads(tree_quads, tree_positions, tree_normals, tree_texcoords, leaf_quads, leaf_positions, leaf_normals, leaf_texcoords);
+
+    auto tree_shape = add_shape(final_scene);
+    tree_shape -> name = "tree";
+    create_shape(tree_shape, tree_quads, tree_positions, tree_normals, tree_texcoords);
+
+    auto tree_txt = add_texture(final_scene);
+    std::string name = "resources/exports/total.png";
+    auto tree_img = load_image_to_texture(name);
+    tree_txt -> colorb = tree_img;
+    tree_txt -> name = "total";
+
+    auto tree_material = add_material(final_scene);
+    tree_material->name = "Wood_material";
+    tree_material->roughness = 1;
+    tree_material->color_tex = tree_txt;
+    tree_material->color = vec3f{1,1,1};
+
+    auto tree_obj = add_object(final_scene);
+    tree_obj -> name = "Tree_obj";
+    tree_obj -> shape = tree_shape;
+    tree_obj -> material = tree_material;
+    tree_obj -> frame = frame3f{vec3f{0,0,1}, vec3f{1,0,0}, vec3f{0,1,0}, vec3f{0,0,0}};
+
+  }
+  
 
   //Simple camera
   auto cam = add_camera(final_scene);
