@@ -269,6 +269,13 @@ void create_shape(shape* shape, std::vector<vec4i>& quads, std::vector<vec3f>& p
 
 }
 
+int g(int n_attractors, int attractors_range_min, int attractors_range_max, int attractors_z_offset,
+      vec3f tree_starting_point, vec3f trunk_length, int max_nodes, float D, float W, float max_width,
+      float max_influence_sphere, float max_killing_radius, vec3f tropism, int leaves_density_min, int leaves_density_max,
+      float leaf_size_max, float leaf_size_min, float a_spiral, float k_spiral, float e, float rounds, int leaves_textures_number,
+      bool single_object, std::string single_mode_texture_path, std::string single_mode_opacity_texture_path,
+      std::string multiple_mode_tree_texture_path, std::string multiple_modes_leaf_opacity_texture_path,  std::string export_name_path);
+
 int main(void)
 {
   std::cout << "Hello, yocto!\n";
