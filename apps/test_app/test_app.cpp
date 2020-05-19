@@ -281,6 +281,7 @@ int main(void)
   
   std::string error;
   auto tree_nodes = std::vector<int>();
+  bool single_object = false;
   
 
 
@@ -541,81 +542,89 @@ int main(void)
   //Scene preparation
 
   auto final_scene = new model();
-  
+
+  //Here, the output is a scene with multiple objects and a texture file for each object.
+  if(single_object == false)
+  {
     //Generate the shapes (only two)
-  auto tree_shape = add_shape(final_scene);
-  tree_shape -> name = "tree";
-  create_shape(tree_shape, tree_quads, tree_positions, tree_normals, tree_texcoords);
-  auto leaf_shape = add_shape(final_scene);
-  leaf_shape -> name = "leaves";
-  create_shape(leaf_shape, leaf_quads, leaf_positions, leaf_normals, leaf_texcoords);
-  
-  
+    auto tree_shape = add_shape(final_scene);
+    tree_shape -> name = "tree";
+    create_shape(tree_shape, tree_quads, tree_positions, tree_normals, tree_texcoords);
+    auto leaf_shape = add_shape(final_scene);
+    leaf_shape -> name = "leaves";
+    create_shape(leaf_shape, leaf_quads, leaf_positions, leaf_normals, leaf_texcoords);
+    
+    
 
 
-  
-  //Load textures
-  auto tree_txt = add_texture(final_scene);
-  std::string name = "resources/exports/tree.png";
-  auto tree_img = load_image_to_texture(name);
-  tree_txt -> colorb = tree_img;
-  tree_txt -> name = "tree";
+    
+    //Load textures
+    auto tree_txt = add_texture(final_scene);
+    std::string name = "resources/exports/tree.png";
+    auto tree_img = load_image_to_texture(name);
+    tree_txt -> colorb = tree_img;
+    tree_txt -> name = "tree.png";
 
-  
+    
 
-  auto leaf_txt = add_texture(final_scene);
-  name = "resources/exports/leaf.png";
-  auto leaf_img = load_image_to_texture(name);
-  leaf_txt -> colorb = leaf_img;
-  leaf_txt -> name = "leaf";
+    auto leaf_txt = add_texture(final_scene);
+    name = "resources/exports/leaf.png";
+    auto leaf_img = load_image_to_texture(name);
+    leaf_txt -> colorb = leaf_img;
+    leaf_txt -> name = "leaf.png";
 
-  auto leaf_opacity_txt = add_texture(final_scene);
-  name = "resources/exports/leaf_opacity.png";
-  auto leaf_opacity_img = load_scalar_image_to_texture(name);
-  leaf_opacity_txt->scalarb = leaf_opacity_img;
-  leaf_opacity_txt->name = "leaf_opacity";
-  
-  //Prepare materials
-  auto tree_material = add_material(final_scene);
-  tree_material->name = "Wood_material";
-  tree_material->roughness = 1;
-  tree_material->color_tex = tree_txt;
-  tree_material->color = vec3f{1,1,1};
-  
+    auto leaf_opacity_txt = add_texture(final_scene);
+    name = "resources/exports/leaf_opacity.png";
+    auto leaf_opacity_img = load_scalar_image_to_texture(name);
+    leaf_opacity_txt->scalarb = leaf_opacity_img;
+    leaf_opacity_txt->name = "leaf_opacity.png";
+    
 
-  auto leaf_material = add_material(final_scene);
-  leaf_material->name = "Leaf_material";
-  leaf_material->roughness = 1;
-  leaf_material->color_tex = leaf_txt;
-  leaf_material->opacity_tex = leaf_opacity_txt;
 
-  leaf_material->color = vec3f{1,1,1};
- 
+    //Prepare materials
+    auto tree_material = add_material(final_scene);
+    tree_material->name = "Wood_material";
+    tree_material->roughness = 1;
+    tree_material->color_tex = tree_txt;
+    tree_material->color = vec3f{1,1,1};
+    
 
-  //Prepare objects
-  auto tree_obj = add_object(final_scene);
-  tree_obj -> name = "Tree_obj";
-  tree_obj -> shape = tree_shape;
-  tree_obj -> material = tree_material;
-  tree_obj -> frame = frame3f{vec3f{0,0,1}, vec3f{1,0,0}, vec3f{0,1,0}, vec3f{0,0,0}};
+    auto leaf_material = add_material(final_scene);
+    leaf_material->name = "Leaf_material";
+    leaf_material->roughness = 1;
+    leaf_material->color_tex = leaf_txt;
+    leaf_material->opacity_tex = leaf_opacity_txt;
+
+
+
+    leaf_material->color = vec3f{1,1,1};
   
 
-  auto leaf_obj = add_object(final_scene);
-  leaf_obj -> name = "Leaf_obj";
-  leaf_obj -> shape = leaf_shape;
-  leaf_obj -> material = leaf_material;
-  leaf_obj -> frame = frame3f{vec3f{0,0,1}, vec3f{1,0,0}, vec3f{0,1,0}, vec3f{0,0,0}};
+    //Prepare objects
+    auto tree_obj = add_object(final_scene);
+    tree_obj -> name = "Tree_obj";
+    tree_obj -> shape = tree_shape;
+    tree_obj -> material = tree_material;
+    tree_obj -> frame = frame3f{vec3f{0,0,1}, vec3f{1,0,0}, vec3f{0,1,0}, vec3f{0,0,0}};
+    
+
+    auto leaf_obj = add_object(final_scene);
+    leaf_obj -> name = "Leaf_obj";
+    leaf_obj -> shape = leaf_shape;
+    leaf_obj -> material = leaf_material;
+    leaf_obj -> frame = frame3f{vec3f{0,0,1}, vec3f{1,0,0}, vec3f{0,1,0}, vec3f{0,0,0}};
+  }
 
   //Simple camera
   auto cam = add_camera(final_scene);
-  cam->frame = frame_fromz(vec3f{-10,2,0}, vec3f{-5,0,0});
+  cam->frame = frame_fromz(vec3f{-10,2,0}, vec3f{-5,0.1,0.1});
   
   //Simple environment 
   auto env = add_environment(final_scene);
   env->emission = vec3f{0.4,0.4,0.4};
   
-  // If you save in obj it will have an opacity texture
-  bool ok = save_scene("resources/exports/test.json", final_scene, error);
+  // If you save in json it will have an opacity texture
+  bool ok = save_scene("resources/exports/test.obj", final_scene, error);
   
 
   
