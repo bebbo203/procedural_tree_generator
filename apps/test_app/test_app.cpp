@@ -34,7 +34,7 @@ std::vector<int> get_influence_sphere(vec3f center, std::vector<vec3f>& attracto
   return influencers;
 }
 
-void sphere_try(std::vector<vec4i>& quads, std::vector<vec3f>& positions,
+void make_sphere_position(std::vector<vec4i>& quads, std::vector<vec3f>& positions,
     std::vector<vec3f>& normals, std::vector<vec2f>& texcoords,
     const vec2i& steps, float scale, const vec2f& uvscale, const vec3f& p) 
 {
@@ -60,7 +60,7 @@ void sphere_try(std::vector<vec4i>& quads, std::vector<vec3f>& positions,
 
 
 // R è di quanto la base deve essere più grande 
-void cylinder_try(std::vector<vec4i>& quads, std::vector<vec3f>& positions,
+void make_pill_frame(std::vector<vec4i>& quads, std::vector<vec3f>& positions,
     std::vector<vec3f>& normals, std::vector<vec2f>& texcoords,
     const vec3i& steps, const vec2f& scale, const vec3f& uvscale, const frame3f& frame, const float R=0) {
   auto qquads     = std::vector<vec4i>{};
@@ -77,9 +77,9 @@ void cylinder_try(std::vector<vec4i>& quads, std::vector<vec3f>& positions,
       {1, 1}, {1, 1});
   
   
-  //sphere_try(squads, spositions, snormals, stexcoords, vec2i{steps.x,steps.y}, scale.x + R, vec2f{uvscale.x,uvscale.y}, vec3f{0,0,0});
+  //make_sphere_position(squads, spositions, snormals, stexcoords, vec2i{steps.x,steps.y}, scale.x + R, vec2f{uvscale.x,uvscale.y}, vec3f{0,0,0});
   //
-  sphere_try(squads, spositions, snormals, stexcoords, vec2i{steps.x,steps.y}, scale.x, vec2f{uvscale.x,uvscale.y}, vec3f{0,0,scale.y*2}) ;
+  make_sphere_position(squads, spositions, snormals, stexcoords, vec2i{steps.x,steps.y}, scale.x, vec2f{uvscale.x,uvscale.y}, vec3f{0,0,scale.y*2}) ;
   squads.erase(squads.begin() + squads.size()/2 , squads.end());
 
 
@@ -119,7 +119,7 @@ void cylinder_try(std::vector<vec4i>& quads, std::vector<vec3f>& positions,
       snormals, stexcoords);
 }
 
-void quad_try(std::vector<vec4i>& quads, std::vector<vec3f>& positions,
+void make_quad_frame(std::vector<vec4i>& quads, std::vector<vec3f>& positions,
     std::vector<vec3f>& normals, std::vector<vec2f>& texcoords, float scale, const frame3f& frame) {
   auto quad_positions = std::vector<vec3f>{
       {0, 0, 0}, {1, 0, 0}, {1, 1, 0}, {0, 1, 0}};
@@ -494,7 +494,7 @@ int main(void)
     vec3f uv_scale = vec3f{W*width, length/2, 1};
     uv_scale = {width*pif / 32, 1  ,1};
 
-    cylinder_try(tree_quads, tree_positions,
+    make_pill_frame(tree_quads, tree_positions,
       tree_normals, tree_texcoords, vec3i{8, 8, 8}, scale, uv_scale , frame, base_width * W );
   
     // Add leaves to the last branches: the majority of trees have leaves only on
@@ -524,7 +524,7 @@ int main(void)
         leaf_frame.y = transform_vector(random_rotation, leaf_frame.y);
         leaf_frame.z = transform_vector(random_rotation, leaf_frame.z);
         
-        quad_try(leaf_quads, leaf_positions, leaf_normals, leaf_texcoords, leaf_size, leaf_frame);   
+        make_quad_frame(leaf_quads, leaf_positions, leaf_normals, leaf_texcoords, leaf_size, leaf_frame);   
       }
     }
   }
@@ -576,7 +576,9 @@ int main(void)
     auto quads_counter = 0;
     for(int i=0; i<leaf_positions.size(); i+=4)
     {
-      auto where = rand1f(rng) < 0.5 ? 1 : 0;
+      auto extraction = rand1f(rng) * (leaves_textures_number-1);
+      auto where = round(extraction);
+      
       for(int j=0; j<4; j++)
       {
         leaf_positions_array[where] += leaf_positions[i+j];
