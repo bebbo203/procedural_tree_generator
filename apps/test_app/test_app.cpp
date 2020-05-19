@@ -518,12 +518,17 @@ int main(void)
   
   }
   
+
+  auto leaf_positions_array = std::vector<std::vector<vec3f>>(leaves_textures_number);
+  auto leaf_quads_array = std::vector<std::vector<vec4i>>(leaves_textures_number);
+  auto leaf_normals_array = std::vector<std::vector<vec3f>>(leaves_textures_number);
+  auto leaf_texcoords_array = std::vector<std::vector<vec2f>>(leaves_textures_number);
   if(single_object)
   {
     //UV coordinates need to be changed: 
 
     //Tree cordinates change: just divide by 2.
-    //Maybe some precision error?
+    //Maybe some precision error? With this margin it seems to work fine so...
     float max = 0;
     for(auto& uv: tree_texcoords)
     {
@@ -555,11 +560,8 @@ int main(void)
   else
   {
     //Nothing to do for the trunk but the leaves need to be subdivided in others shapes
-    auto leaf_positions_array = std::vector<std::vector<vec3f>>(2);
-    auto leaf_quads_array = std::vector<std::vector<vec4i>>(2);
-    auto leaf_normals_array = std::vector<std::vector<vec3f>>(2);
-    auto leaf_texcoords_array = std::vector<std::vector<vec2f>>(2);
-
+    
+    
     auto quads_counter = 0;
     for(int i=0; i<leaf_positions.size(); i+=4)
     {
@@ -568,26 +570,15 @@ int main(void)
       {
         leaf_positions_array[where] += leaf_positions[i+j];
         leaf_normals_array[where] += leaf_normals[i+j];
+        leaf_texcoords_array[where] += leaf_texcoords[i+j];
       }
-      leaf_texcoords_array[where] += leaf_texcoords[quads_counter++];
-      
-      
+      int q = leaf_positions_array[where].size();
+      leaf_quads_array[where] += vec4i{q-4, q-3, q-2, q-1};
     }
+
+   
   }
   
-
-  if(false)
-  {
-    positions.clear();
-    quads.clear();
-    normals.clear();
-    texcoords.clear();
-    lines.clear();
-    
-
-    cylinder_try(quads, positions,
-      normals, texcoords, vec3i{8, 8, 8}, vec2f{0.5, 1}, vec3f{0.5, 0.5, 1.0}, frame_fromz(vec3f{1,1,0}, vec3f{0,0,1}), 1 );
-  }
   
   
   std::cout << "Positions: " << tree_positions.size() << "\n";
@@ -604,14 +595,20 @@ int main(void)
   //Here, the output is a scene with multiple objects and a texture file for each object.
   if(single_object == false)
   {
-    //Generate the shapes (only two)
+    //Generate the tree shape
     auto tree_shape = add_shape(final_scene);
     tree_shape -> name = "tree";
     create_shape(tree_shape, tree_quads, tree_positions, tree_normals, tree_texcoords);
-    auto leaf_shape = add_shape(final_scene);
-    leaf_shape -> name = "leaves";
-    create_shape(leaf_shape, leaf_quads, leaf_positions, leaf_normals, leaf_texcoords);
     
+    //One shape for every set of leaves
+    auto leaf_shape_array = std::vector<yocto::sceneio::shape*>(leaves_textures_number);
+    for(int i=0; i<leaves_textures_number; i++)
+    {
+      leaf_shape_array[i] = add_shape(final_scene);
+      std::string shape_name = "leaf_shape_"+std::to_string(i);
+      leaf_shape_array[i] -> name = shape_name;
+      create_shape(leaf_shape_array[i], leaf_quads_array[i], leaf_positions_array[i], leaf_normals_array[i], leaf_texcoords_array[i]);
+    }
     
 
 
@@ -623,20 +620,25 @@ int main(void)
     tree_txt -> colorb = tree_img;
     tree_txt -> name = "tree";
 
-    
+    auto leaf_txt_array = std::vector<yocto::sceneio::texture*>(leaves_textures_number*2);
+    auto txt_cnt = 0;
+    for(int i=0; i<leaves_textures_number; i++)
+    {
+      leaf_txt_array[txt_cnt] = add_texture(final_scene);
+      std::string txt_name = "resources/exports/leaf_"+std::to_string(i)+".png";
+      auto leaf_img = load_image_to_texture(txt_name);
+      leaf_txt_array[txt_cnt] -> colorb = leaf_img;
+      leaf_txt_array[txt_cnt] -> name = "leaf_txt_"+std::to_string(i);
 
-    auto leaf_txt = add_texture(final_scene);
-    name = "resources/exports/leaf.png";
-    auto leaf_img = load_image_to_texture(name);
-    leaf_txt -> colorb = leaf_img;
-    leaf_txt -> name = "leaf";
+      leaf_txt_array[txt_cnt+1] = add_texture(final_scene);
+      std::string txt_opacity_name = "resources/exports/leaf_opacity_"+std::to_string(i)+".png";
+      auto leaf_opacity_img = load_scalar_image_to_texture(txt_opacity_name);
+      leaf_txt_array[txt_cnt+1] ->scalarb = leaf_opacity_img;
+      leaf_txt_array[txt_cnt+1] ->name = "leaf_opacity_txt_"+std::to_string(i);
 
-    auto leaf_opacity_txt = add_texture(final_scene);
-    name = "resources/exports/leaf_opacity.png";
-    auto leaf_opacity_img = load_scalar_image_to_texture(name);
-    leaf_opacity_txt->scalarb = leaf_opacity_img;
-    leaf_opacity_txt->name = "leaf_opacity";
-    
+      txt_cnt += 2;
+    }
+
 
 
     //Prepare materials
@@ -646,15 +648,25 @@ int main(void)
     tree_material->color_tex = tree_txt;
     tree_material->color = vec3f{1,1,1};
     
+    txt_cnt = 0;
+    auto leaf_material_array = std::vector<yocto::sceneio::material*>(leaves_textures_number);
+    for(int i=0; i<leaves_textures_number; i++)
+    {
+      leaf_material_array[i] = add_material(final_scene);
+      leaf_material_array[i]->name = "Leaf_material_"+std::to_string(i);
+      leaf_material_array[i]->roughness = 1;
+      leaf_material_array[i]->color_tex = leaf_txt_array[txt_cnt];
+      leaf_material_array[i]->opacity_tex = leaf_txt_array[txt_cnt+1];
+      leaf_material_array[i]->color = vec3f{1,1,1};
+      
+      txt_cnt += 2;
+    }
 
-    auto leaf_material = add_material(final_scene);
-    leaf_material->name = "Leaf_material";
-    leaf_material->roughness = 1;
-    leaf_material->color_tex = leaf_txt;
-    leaf_material->opacity_tex = leaf_opacity_txt;
-    leaf_material->color = vec3f{1,1,1};
-  
-
+    for(auto x: leaf_material_array)
+    {
+      std::cout << x->color_tex->name << "\n";
+      std::cout << x->opacity_tex->name << "\n";
+    }
     //Prepare objects
     auto tree_obj = add_object(final_scene);
     tree_obj -> name = "Tree_obj";
@@ -662,12 +674,16 @@ int main(void)
     tree_obj -> material = tree_material;
     tree_obj -> frame = frame3f{vec3f{0,0,1}, vec3f{1,0,0}, vec3f{0,1,0}, vec3f{0,0,0}};
     
-
-    auto leaf_obj = add_object(final_scene);
-    leaf_obj -> name = "Leaf_obj";
-    leaf_obj -> shape = leaf_shape;
-    leaf_obj -> material = leaf_material;
-    leaf_obj -> frame = frame3f{vec3f{0,0,1}, vec3f{1,0,0}, vec3f{0,1,0}, vec3f{0,0,0}};
+    auto leaf_obj_array = std::vector<yocto::sceneio::object*>(leaves_textures_number);
+    for(int i=0; i<leaves_textures_number; i++)
+    {
+      leaf_obj_array[i] = add_object(final_scene);
+      leaf_obj_array[i] -> name = "Leaf_obj_"+std::to_string(i);
+      leaf_obj_array[i] -> shape = leaf_shape_array[i];
+      
+      leaf_obj_array[i] -> material = leaf_material_array[i];
+      leaf_obj_array[i] -> frame = frame3f{vec3f{0,0,1}, vec3f{1,0,0}, vec3f{0,1,0}, vec3f{0,0,0}};
+    }
   }
   else
   {
@@ -710,9 +726,8 @@ int main(void)
 
   //Simple camera
   auto cam = add_camera(final_scene);
-  //auto camera_frame = frame_fromz(vec3f{-10,2,0}, vec3f{-5,0.1,0.1});
   auto camera_frame = lookat_frame(vec3f{-10, 2, 1}, vec3f{1,1,1}, vec3f{0,0,1});
-  cam->frame = camera_frame;
+  cam->frame = frame3f{identity3x3f, vec3f{0,1.92,8.6}};
   
   
   //Simple environment 
@@ -720,7 +735,7 @@ int main(void)
   env->emission = vec3f{0.4,0.4,0.4};
   
   // If you save in json it will have an opacity texture
-  bool ok = save_scene("resources/exports/test.obj", final_scene, error);
+  bool ok = save_scene("resources/exports/test.json", final_scene, error);
   
 
   
