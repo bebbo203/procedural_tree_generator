@@ -37,6 +37,12 @@
 
 #include <yocto/yocto_image.h>
 #include <yocto/yocto_math.h>
+#include <iostream>
+#include <yocto/yocto_shape.h>
+#include <yocto/yocto_common.h>
+#include <yocto/yocto_sceneio.h>
+#include <yocto/yocto_shape.h>
+#include <math.h>
 
 #include <atomic>
 #include <future>
@@ -74,6 +80,32 @@ using math::zero3f;
 // HIGH LEVEL API
 // -----------------------------------------------------------------------------
 namespace yocto::extension {
+
+    std::vector<int> get_influence_sphere(vec3f center, std::vector<vec3f>& attractors, float radius);
+
+    void make_sphere_position(std::vector<vec4i>& quads, std::vector<vec3f>& positions,
+        std::vector<vec3f>& normals, std::vector<vec2f>& texcoords,
+        const vec2i& steps, float scale, const vec2f& uvscale, const vec3f& p);
+    
+    void make_pill_frame(std::vector<vec4i>& quads, std::vector<vec3f>& positions,
+        std::vector<vec3f>& normals, std::vector<vec2f>& texcoords,
+        const vec3i& steps, const vec2f& scale, const vec3f& uvscale, const frame3f& frame, const float R);
+    
+    void make_quad_frame(std::vector<vec4i>& quads, std::vector<vec3f>& positions,
+        std::vector<vec3f>& normals, std::vector<vec2f>& texcoords, float scale, const frame3f& frame);
+    
+    float branches_depth(std::vector<vec2i> lines, std::vector<int> branches, vec2i start_line);
+
+    float f(float x);
+
+    std::vector<vec3f> attractors_generator(int points_number, float range_min, float range_max, float z_offset, float f(float), rng_state& rng);
+
+    yocto::image::image<vec3b> load_image_to_texture(std::string& img_path);
+
+    yocto::image::image<byte> load_scalar_image_to_texture(std::string& img_path);
+
+    bool create_shape(yocto::sceneio::shape* shape, std::vector<vec4i>& quads, std::vector<vec3f>& positions,
+        std::vector<vec3f>& normals, std::vector<vec2f>& texcoords);
 
 }  // namespace yocto::pathtrace
 
