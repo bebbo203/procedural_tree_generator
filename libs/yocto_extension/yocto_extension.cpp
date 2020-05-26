@@ -292,7 +292,7 @@ namespace yocto::extension
         return  -1 * x * x + 3 * x + 0.3;
     }
 
-    std::vector<vec3f> attractors_generator(int points_number, float range_min, float range_max, float z_offset, float f(float), rng_state& rng)
+    std::vector<vec3f> attractors_generator(int points_number, float range_min, float range_max, float z_offset, float f(float), rng_state& rng, int f_selector)
     {
         std::vector<vec3f> cloud;
         
@@ -300,15 +300,39 @@ namespace yocto::extension
         {
             auto p = (range_max - range_min) * rand3f(rng) + range_min;
             
-            if(distance(p, vec3f{0,0,0}) < 8)
-            //if(pow(p.x*p.x + p.y*p.y, 0.5) < f(p.z))
-            //if(10 > pow(p.x - 0, 2.0) + pow(p.y, 2.0) && p.z > 1 && p.z < 8)
+
+            if(f_selector == 0)
             {
-            p.z += z_offset;
-            cloud += p;
+                if(distance(p, zero3f) < range_max/2)
+                {
+                    p.z += z_offset;
+                    cloud += p;
+                }
+                else
+                    i -= 1; 
             }
-            else
-            i -= 1;   
+            else if (f_selector == 1)
+            {
+                if(pow(p.x*p.x + p.y*p.y, 0.5) < f(p.z))
+                {
+                    p.z += z_offset;
+                    cloud += p;
+                }
+                else
+                    i -= 1; 
+            }
+            else if (f_selector == 2)
+            {
+                if(10 > pow(p.x , 2.0) + pow(p.y, 2.0) && p.z > 0 && p.z < 10)
+                {
+                    p.z += z_offset;
+                    cloud += p;
+                }
+                else
+                    i -= 1; 
+            }
+            
+ 
         }
 
         return cloud;
@@ -349,10 +373,9 @@ namespace yocto::extension
       float leaf_size_max, float leaf_size_min, float a_spiral, float k_spiral, float e, float rounds, int leaves_textures_number,
       bool single_object, std::string single_mode_texture_path, std::string single_mode_opacity_texture_path,
       std::string multiple_mode_tree_texture_path, std::string multiple_modes_leaf_texture_path, 
-      std::string multiple_modes_leaf_opacity_texture_path,  std::string export_name_path)
+      std::string multiple_modes_leaf_opacity_texture_path,  std::string export_name_path, int f_selector)
     {
-        std::cout << "Hello, yocto!\n";
-        std::cout << "On blender, Y forward, Z up.\n";
+        
 
         std::vector<vec4i> quads, leaf_quads, tree_quads; 
         std::vector<vec3f> positions, nodes_positions, leaf_positions, tree_positions;
@@ -437,7 +460,8 @@ namespace yocto::extension
 
         //Cloud generation
         rng_state rng = make_rng(54);
-        std::vector<vec3f> cloud = attractors_generator(n_attractors, attractors_range_min, attractors_range_max , attractors_z_offset,  f, rng);
+        std::cout << "Generating attractors...\n";
+        std::vector<vec3f> cloud = attractors_generator(n_attractors, attractors_range_min, attractors_range_max , attractors_z_offset,  f, rng, f_selector);
         
         nodes_positions += tree_starting_point;
         tree_nodes += 0;
@@ -454,7 +478,7 @@ namespace yocto::extension
             auto a = trunk_length;
             auto b = nodes_positions[tree_nodes.size()-1];
             auto dir = normalize(a-b);
-            //std::cout << dir.x << "," << dir.y << "," << dir.z << "\n";
+            
             auto new_node = b + dir * D;
             
             nodes_positions += new_node;
@@ -462,11 +486,12 @@ namespace yocto::extension
             branches[nodes_positions.size()-1] += 1;
             lines += {(int)tree_nodes.size()-2, (int)tree_nodes.size()-1};
             dist = distance(new_node, trunk_length);
-            //std::cout << new_node.x << "|" << new_node.y << "|" << new_node.x << " | " << dist << "\n";
+            
         }
 
         auto forbidden_node = (int)tree_nodes.size() - 1;
         
+        std::cout << "Growing the tree...\n";
         while(tree_nodes.size() < max_nodes)
         {
             
@@ -474,56 +499,56 @@ namespace yocto::extension
             for(auto node: tree_nodes)
             {
             
-            if(node < forbidden_node || branches[node] >= 3)
-                continue;
-            auto new_cloud = std::vector<vec3f>();
-            auto v = nodes_positions[node];
+                if(node < forbidden_node || branches[node] >= 3)
+                    continue;
+                auto new_cloud = std::vector<vec3f>();
+                auto v = nodes_positions[node];
 
-            auto attractors = get_influence_sphere(v, cloud, max_influence_sphere);
-            
-            if(attractors.empty())
-                continue;
+                auto attractors = get_influence_sphere(v, cloud, max_influence_sphere);
+                
+                if(attractors.empty())
+                    continue;
 
-            branches[node] += 1;
-            auto total_dir = zero3f;
-            for(auto a: attractors)
-            {
-                auto s = cloud[a];
-                total_dir += normalize(s - v);
-            } 
-            total_dir = normalize(total_dir + tropism);
-            
-            auto v_prime = v + total_dir * D;
-            
-            nodes_positions += v_prime;
-            int new_node = nodes_positions.size()-1;
-
-            lines += vec2i{node, new_node};
-            nodes_to_be_added += new_node;
-
-            if(nodes_to_be_added.size() + tree_nodes.size() >= max_nodes)
-                break;
-
-            auto dead_attractors = get_influence_sphere(v_prime, cloud, max_killing_radius);
-
-            for(int i=0; i<cloud.size(); i++)
-            {
-                auto j = std::find(dead_attractors.begin(), dead_attractors.end(), i);
-                if(j == dead_attractors.end())
+                branches[node] += 1;
+                auto total_dir = zero3f;
+                for(auto a: attractors)
                 {
-                new_cloud += cloud[i];
+                    auto s = cloud[a];
+                    total_dir += normalize(s - v);
+                } 
+                total_dir = normalize(total_dir + tropism);
+                
+                auto v_prime = v + total_dir * D;
+                
+                nodes_positions += v_prime;
+                int new_node = nodes_positions.size()-1;
+
+                lines += vec2i{node, new_node};
+                nodes_to_be_added += new_node;
+
+                if(nodes_to_be_added.size() + tree_nodes.size() >= max_nodes)
+                    break;
+
+                auto dead_attractors = get_influence_sphere(v_prime, cloud, max_killing_radius);
+
+                for(int i=0; i<cloud.size(); i++)
+                {
+                    auto j = std::find(dead_attractors.begin(), dead_attractors.end(), i);
+                    if(j == dead_attractors.end())
+                    {
+                    new_cloud += cloud[i];
+                    }
                 }
-            }
-            
-            cloud = new_cloud;
+                
+                cloud = new_cloud;
             }
 
             if(nodes_to_be_added.empty())
-            break;
+                break;
             else
             {
-            nodes_to_be_added += tree_nodes;
-            tree_nodes = nodes_to_be_added;
+                nodes_to_be_added += tree_nodes;
+                tree_nodes = nodes_to_be_added;
             } 
         }
         
@@ -540,7 +565,7 @@ namespace yocto::extension
             width_vector[l[0]][l[1]] = t > max_width ? max_width : t;
         }
 
-
+        std::cout << "Building the meshes...\n";
         frame3f frame;
         for(auto l: lines)
         {
@@ -555,61 +580,61 @@ namespace yocto::extension
             auto base_width = width;
             for(int i=0; i < tree_nodes.size(); i++)
             {
-            if(width_vector[i][l[0]] != -1)
-            {
-                base_width = width_vector[i][l[0]];
-                break;
+                if(width_vector[i][l[0]] != -1)
+                {
+                    base_width = width_vector[i][l[0]];
+                    break;
+                }
             }
-            }
 
-            //Used to mantain a certain armony within the small branches
-            auto max_base_width = width * 3;
+                //Used to mantain a certain armony within the small branches
+                auto max_base_width = width * 3;
 
-            base_width = (base_width - width);
+                base_width = (base_width - width);
 
-            if(base_width > max_base_width)
-            base_width = max_base_width;
+                if(base_width > max_base_width)
+                base_width = max_base_width;
 
-            vec2f scale = vec2f{W * width, length/2};
-            vec3f uv_scale = vec3f{W*width, length/2, 1};
-            uv_scale = {width*pif / 32, 1  ,1};
+                vec2f scale = vec2f{W * width, length/2};
+                vec3f uv_scale = vec3f{W*width, length/2, 1};
+                uv_scale = {width*pif / 32, 1  ,1};
 
-            make_pill_frame(tree_quads, tree_positions,
-            tree_normals, tree_texcoords, vec3i{8, 8, 8}, scale, uv_scale , frame, base_width * W );
-        
-            // Add leaves to the last branches: the majority of trees have leaves only on
-            // branches that don't have sons.
-            if(width == 1)
-            {
-            int how_much = (leaves_density_max -  leaves_density_min) * rand1f(rng) +  leaves_density_min; 
-            for(int i=0; i<how_much; i++)
-            {
-                auto p = (1 / (float)how_much * (i+1));
-                
-
-                auto leaf_position = x + p * (x_ - x);
-                
-                
-                p = rounds * pif * p ;
-                float X = a_spiral * pow((double)e, k_spiral*p) * yocto::math::cos(p); 
-                float Y = a_spiral * pow((double)e, k_spiral*p) * yocto::math::sin(p); 
+                make_pill_frame(tree_quads, tree_positions,
+                tree_normals, tree_texcoords, vec3i{8, 8, 8}, scale, uv_scale , frame, base_width * W );
             
-                auto leaf_size = (leaf_size_max - leaf_size_min) * rand1f(rng) + leaf_size_min;
-                
-                frame3f leaf_frame;
-                leaf_frame = frame_fromzx(leaf_position, frame.z, vec3f{X, Y, 0});
-                auto random_rotation = rotation_frame(leaf_frame.x, rand1f(rng));
-                
-                leaf_frame.x = transform_vector(random_rotation, leaf_frame.x);
-                leaf_frame.y = transform_vector(random_rotation, leaf_frame.y);
-                leaf_frame.z = transform_vector(random_rotation, leaf_frame.z);
-                
-                make_quad_frame(leaf_quads, leaf_positions, leaf_normals, leaf_texcoords, leaf_size, leaf_frame);   
-            }
-            }
+                // Add leaves to the last branches: the majority of trees have leaves only on
+                // branches that don't have sons.
+                if(leaves_density_max != 0 && width == 1)
+                {
+                    int how_much = (leaves_density_max -  leaves_density_min) * rand1f(rng) +  leaves_density_min; 
+                    for(int i=0; i<how_much; i++)
+                    {
+                        auto p = (1 / (float)how_much * (i+1));
+                        
+
+                        auto leaf_position = x + p * (x_ - x);
+                        
+                        
+                        p = rounds * pif * p ;
+                        float X = a_spiral * pow((double)e, k_spiral*p) * yocto::math::cos(p); 
+                        float Y = a_spiral * pow((double)e, k_spiral*p) * yocto::math::sin(p); 
+                    
+                        auto leaf_size = (leaf_size_max - leaf_size_min) * rand1f(rng) + leaf_size_min;
+                        
+                        frame3f leaf_frame;
+                        leaf_frame = frame_fromzx(leaf_position, frame.z, vec3f{X, Y, 0});
+                        auto random_rotation = rotation_frame(leaf_frame.x, rand1f(rng));
+                        
+                        leaf_frame.x = transform_vector(random_rotation, leaf_frame.x);
+                        leaf_frame.y = transform_vector(random_rotation, leaf_frame.y);
+                        leaf_frame.z = transform_vector(random_rotation, leaf_frame.z);
+                        
+                        make_quad_frame(leaf_quads, leaf_positions, leaf_normals, leaf_texcoords, leaf_size, leaf_frame);   
+                    }
+                }
         }
         
-
+        
         auto leaf_positions_array = std::vector<std::vector<vec3f>>(leaves_textures_number);
         auto leaf_quads_array = std::vector<std::vector<vec4i>>(leaves_textures_number);
         auto leaf_normals_array = std::vector<std::vector<vec3f>>(leaves_textures_number);
@@ -623,30 +648,44 @@ namespace yocto::extension
             float max = 0;
             for(auto& uv: tree_texcoords)
             {
-            uv.y /= 2.01;
-            uv.y += 1e-3;
-            max = uv.x > max ? uv.x : max;
+                uv.y /= 2.01;
+                uv.y += 1e-3;
+                max = uv.x > max ? uv.x : max;
             }
 
             for(auto& uv: tree_texcoords)
             {
-            uv.x /= (max*2.01); 
-            uv.x += 1e-3;
+                uv.x /= (max*2.01); 
+                uv.x += 1e-3;
             }
 
-
+            //For the leaves we just divide the texcoords and randomly move the texture along the big texture
             for(auto i=0; i<leaf_texcoords.size(); i+=4)
             {
-            auto tx = rand1f(rng);
-            for(auto j=0; j<4; j++)
-            {
-                leaf_texcoords[i+j] /= 2;
-                leaf_texcoords[i+j].x += 0.5;
-                leaf_texcoords[i+j].y += tx < 0.5 ? 0.5 : 0;
+                auto extraction = rand1f(rng) * (leaves_textures_number-1);
+                auto where = round(extraction);
+                for(auto j=0; j<4; j++)
+                {
+                    leaf_texcoords[i+j] /= 2;
+                    
+                    if(where == 0)
+                    {
+                        leaf_texcoords[i+j].x += 0.5;
+                    }
+                    else if (where == 1)
+                    {
+                        leaf_texcoords[i+j].x += 0.5;
+                        leaf_texcoords[i+j].y += 0.5;
+                    }
+                    else if (where == 2)
+                    {
+                        leaf_texcoords[i+j].y += 0.5;
+                    }
+                    
+                    
+                    
+                }
             }
-
-            }
-
         }
         else
         {
@@ -656,17 +695,18 @@ namespace yocto::extension
             auto quads_counter = 0;
             for(int i=0; i<leaf_positions.size(); i+=4)
             {
-            auto extraction = rand1f(rng) * (leaves_textures_number-1);
-            auto where = round(extraction);
-            
-            for(int j=0; j<4; j++)
-            {
-                leaf_positions_array[where] += leaf_positions[i+j];
-                leaf_normals_array[where] += leaf_normals[i+j];
-                leaf_texcoords_array[where] += leaf_texcoords[i+j];
-            }
-            int q = leaf_positions_array[where].size();
-            leaf_quads_array[where] += vec4i{q-4, q-3, q-2, q-1};
+                auto extraction = rand1f(rng) * (leaves_textures_number-1);
+                auto where = round(extraction);
+                
+                for(int j=0; j<4; j++)
+                {
+                    leaf_positions_array[where] += leaf_positions[i+j];
+                    leaf_normals_array[where] += leaf_normals[i+j];
+                    leaf_texcoords_array[where] += leaf_texcoords[i+j];
+                }
+                
+                int q = leaf_positions_array[where].size();
+                leaf_quads_array[where] += vec4i{q-4, q-3, q-2, q-1};
             }
 
         
@@ -684,7 +724,7 @@ namespace yocto::extension
         //Scene preparation
 
         auto final_scene = new model();
-
+        std::cout << "Preparing and saving the models...\n";
         //Here, the output is a scene with multiple objects and a texture file for each object.
         if(single_object == false)
         {
@@ -697,10 +737,10 @@ namespace yocto::extension
             auto leaf_shape_array = std::vector<yocto::sceneio::shape*>(leaves_textures_number);
             for(int i=0; i<leaves_textures_number; i++)
             {
-            leaf_shape_array[i] = add_shape(final_scene);
-            std::string shape_name = "leaf_shape_"+std::to_string(i);
-            leaf_shape_array[i] -> name = shape_name;
-            create_shape(leaf_shape_array[i], leaf_quads_array[i], leaf_positions_array[i], leaf_normals_array[i], leaf_texcoords_array[i]);
+                leaf_shape_array[i] = add_shape(final_scene);
+                std::string shape_name = "leaf_shape_"+std::to_string(i);
+                leaf_shape_array[i] -> name = shape_name;
+                create_shape(leaf_shape_array[i], leaf_quads_array[i], leaf_positions_array[i], leaf_normals_array[i], leaf_texcoords_array[i]);
             }
             
 
@@ -717,19 +757,19 @@ namespace yocto::extension
             auto txt_cnt = 0;
             for(int i=0; i<leaves_textures_number; i++)
             {
-            leaf_txt_array[txt_cnt] = add_texture(final_scene);
-            std::string txt_name = multiple_modes_leaf_texture_path+std::to_string(i)+".png";
-            auto leaf_img = load_image_to_texture(txt_name);
-            leaf_txt_array[txt_cnt] -> colorb = leaf_img;
-            leaf_txt_array[txt_cnt] -> name = "leaf_txt_"+std::to_string(i);
+                leaf_txt_array[txt_cnt] = add_texture(final_scene);
+                std::string txt_name = multiple_modes_leaf_texture_path+std::to_string(i)+".png";
+                auto leaf_img = load_image_to_texture(txt_name);
+                leaf_txt_array[txt_cnt] -> colorb = leaf_img;
+                leaf_txt_array[txt_cnt] -> name = "leaf_txt_"+std::to_string(i);
 
-            leaf_txt_array[txt_cnt+1] = add_texture(final_scene);
-            std::string txt_opacity_name = multiple_modes_leaf_opacity_texture_path+std::to_string(i)+".png";
-            auto leaf_opacity_img = load_scalar_image_to_texture(txt_opacity_name);
-            leaf_txt_array[txt_cnt+1] ->scalarb = leaf_opacity_img;
-            leaf_txt_array[txt_cnt+1] ->name = "leaf_opacity_txt_"+std::to_string(i);
+                leaf_txt_array[txt_cnt+1] = add_texture(final_scene);
+                std::string txt_opacity_name = multiple_modes_leaf_opacity_texture_path+std::to_string(i)+".png";
+                auto leaf_opacity_img = load_scalar_image_to_texture(txt_opacity_name);
+                leaf_txt_array[txt_cnt+1] ->scalarb = leaf_opacity_img;
+                leaf_txt_array[txt_cnt+1] ->name = "leaf_opacity_txt_"+std::to_string(i);
 
-            txt_cnt += 2;
+                txt_cnt += 2;
             }
 
 
@@ -745,14 +785,14 @@ namespace yocto::extension
             auto leaf_material_array = std::vector<yocto::sceneio::material*>(leaves_textures_number);
             for(int i=0; i<leaves_textures_number; i++)
             {
-            leaf_material_array[i] = add_material(final_scene);
-            leaf_material_array[i]->name = "Leaf_material_"+std::to_string(i);
-            leaf_material_array[i]->roughness = 1;
-            leaf_material_array[i]->color_tex = leaf_txt_array[txt_cnt];
-            leaf_material_array[i]->opacity_tex = leaf_txt_array[txt_cnt+1];
-            leaf_material_array[i]->color = vec3f{1,1,1};
-            
-            txt_cnt += 2;
+                leaf_material_array[i] = add_material(final_scene);
+                leaf_material_array[i]->name = "Leaf_material_"+std::to_string(i);
+                leaf_material_array[i]->roughness = 1;
+                leaf_material_array[i]->color_tex = leaf_txt_array[txt_cnt];
+                leaf_material_array[i]->opacity_tex = leaf_txt_array[txt_cnt+1];
+                leaf_material_array[i]->color = vec3f{1,1,1};
+                
+                txt_cnt += 2;
             }
 
 
@@ -766,12 +806,12 @@ namespace yocto::extension
             auto leaf_obj_array = std::vector<yocto::sceneio::object*>(leaves_textures_number);
             for(int i=0; i<leaves_textures_number; i++)
             {
-            leaf_obj_array[i] = add_object(final_scene);
-            leaf_obj_array[i] -> name = "Leaf_obj_"+std::to_string(i);
-            leaf_obj_array[i] -> shape = leaf_shape_array[i];
-            
-            leaf_obj_array[i] -> material = leaf_material_array[i];
-            leaf_obj_array[i] -> frame = frame3f{vec3f{0,0,1}, vec3f{1,0,0}, vec3f{0,1,0}, vec3f{0,0,0}};
+                leaf_obj_array[i] = add_object(final_scene);
+                leaf_obj_array[i] -> name = "Leaf_obj_"+std::to_string(i);
+                leaf_obj_array[i] -> shape = leaf_shape_array[i];
+                
+                leaf_obj_array[i] -> material = leaf_material_array[i];
+                leaf_obj_array[i] -> frame = frame3f{vec3f{0,0,1}, vec3f{1,0,0}, vec3f{0,1,0}, vec3f{0,0,0}};
             }
         }
         else
@@ -829,11 +869,10 @@ namespace yocto::extension
         
 
         if(error == "")
-            std::cout << "You're lucky, no errors!" << "\n";
+            std::cout << "No errors!" << "\n";
         else
             std::cout << "Save error: "<< error <<"\n";
 
-    
     }
 
 

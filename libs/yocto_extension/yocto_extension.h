@@ -99,7 +99,7 @@ namespace yocto::extension
 
     float f(float x);
 
-    std::vector<vec3f> attractors_generator(int points_number, float range_min, float range_max, float z_offset, float f(float), rng_state& rng);
+    std::vector<vec3f> attractors_generator(int points_number, float range_min, float range_max, float z_offset, float f(float), rng_state& rng, int f_selector);
 
     yocto::image::image<vec3b> load_image_to_texture(std::string& img_path);
 
@@ -114,7 +114,7 @@ namespace yocto::extension
       float leaf_size_max, float leaf_size_min, float a_spiral, float k_spiral, float e, float rounds, int leaves_textures_number,
       bool single_object, std::string single_mode_texture_path, std::string single_mode_opacity_texture_path,
       std::string multiple_mode_tree_texture_path, std::string multiple_modes_leaf_texture_path, 
-      std::string multiple_modes_leaf_opacity_texture_path,  std::string export_name_path);
+      std::string multiple_modes_leaf_opacity_texture_path,  std::string export_name_path, int f_selector);
 }  // namespace yocto::pathtrace
 
 #endif

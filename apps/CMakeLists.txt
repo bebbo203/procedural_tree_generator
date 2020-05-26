@@ -1,5 +1,5 @@
 add_subdirectory(yscenetrace)
-add_subdirectory(test_app)
+add_subdirectory(tree_generator)
 
 if(YOCTO_OPENGL)
 add_subdirectory(ysceneitraces)
