@@ -323,16 +323,15 @@ namespace yocto::extension
             }
             else if (f_selector == 2)
             {
-                if(10 > pow(p.x , 2.0) + pow(p.y, 2.0) && p.z > 0 && p.z < 10)
-                {
-                    p.z += z_offset;
+                //if(10 > pow(p.x , 2.0) + pow(p.y, 2.0) && p.z > 0 && p.z < 10)
+                if(p.z > 0 && p.z < -sqrt(pow(p.x, 2.0) + pow(p.y, 2.0)) * 2 + z_offset)
+                {          
                     cloud += p;
                 }
                 else
                     i -= 1; 
             }
             
- 
         }
 
         return cloud;
@@ -371,7 +370,7 @@ namespace yocto::extension
       vec3f tree_starting_point, vec3f trunk_length, int max_nodes, float D, float W, float max_width,
       float max_influence_sphere, float max_killing_radius, vec3f tropism, int leaves_density_min, int leaves_density_max,
       float leaf_size_max, float leaf_size_min, float a_spiral, float k_spiral, float e, float rounds, int leaves_textures_number,
-      bool single_object, std::string single_mode_texture_path, std::string single_mode_opacity_texture_path,
+      int single_object, std::string single_mode_texture_path, std::string single_mode_opacity_texture_path,
       std::string multiple_mode_tree_texture_path, std::string multiple_modes_leaf_texture_path, 
       std::string multiple_modes_leaf_opacity_texture_path,  std::string export_name_path, int f_selector)
     {
@@ -463,6 +462,28 @@ namespace yocto::extension
         std::cout << "Generating attractors...\n";
         std::vector<vec3f> cloud = attractors_generator(n_attractors, attractors_range_min, attractors_range_max , attractors_z_offset,  f, rng, f_selector);
         
+        //////////////////////////////////
+        /*
+        positions = cloud;
+        for(auto x: positions)
+            points += (int)points.size();
+
+        std::vector<vec3i> tri;
+        std::vector<vec4i> quad;
+        std::vector<vec3f> colo;
+        std::vector<float> r;
+        std::string efr;
+        bool xwaa = save_shape("resources/exports/points.obj", points, lines, tri , quad , positions, normals, texcoords, colo, r, efr);
+
+        return;
+        */
+        
+
+
+
+
+        /////////////////////////////////
+
         nodes_positions += tree_starting_point;
         tree_nodes += 0;
 
@@ -587,51 +608,51 @@ namespace yocto::extension
                 }
             }
 
-                //Used to mantain a certain armony within the small branches
-                auto max_base_width = width * 3;
+            //Used to mantain a certain armony within the small branches
+            auto max_base_width = width * 3;
 
-                base_width = (base_width - width);
+            base_width = (base_width - width);
 
-                if(base_width > max_base_width)
-                base_width = max_base_width;
+            if(base_width > max_base_width)
+            base_width = max_base_width;
 
-                vec2f scale = vec2f{W * width, length/2};
-                vec3f uv_scale = vec3f{W*width, length/2, 1};
-                uv_scale = {width*pif / 32, 1  ,1};
+            vec2f scale = vec2f{W * width, length/2};
+            vec3f uv_scale = vec3f{W*width, length/2, 1};
+            uv_scale = {width*pif / 32, 1  ,1};
 
-                make_pill_frame(tree_quads, tree_positions,
-                tree_normals, tree_texcoords, vec3i{8, 8, 8}, scale, uv_scale , frame, base_width * W );
-            
-                // Add leaves to the last branches: the majority of trees have leaves only on
-                // branches that don't have sons.
-                if(leaves_density_max != 0 && width == 1)
+            make_pill_frame(tree_quads, tree_positions,
+            tree_normals, tree_texcoords, vec3i{8, 8, 8}, scale, uv_scale , frame, base_width * W );
+        
+            // Add leaves to the last branches: the majority of trees have leaves only on
+            // branches that don't have sons.
+            if(leaves_density_max != 0 && width == 1)
+            {
+                int how_much = (leaves_density_max -  leaves_density_min) * rand1f(rng) +  leaves_density_min; 
+                for(int i=0; i<how_much; i++)
                 {
-                    int how_much = (leaves_density_max -  leaves_density_min) * rand1f(rng) +  leaves_density_min; 
-                    for(int i=0; i<how_much; i++)
-                    {
-                        auto p = (1 / (float)how_much * (i+1));
-                        
-
-                        auto leaf_position = x + p * (x_ - x);
-                        
-                        
-                        p = rounds * pif * p ;
-                        float X = a_spiral * pow((double)e, k_spiral*p) * yocto::math::cos(p); 
-                        float Y = a_spiral * pow((double)e, k_spiral*p) * yocto::math::sin(p); 
+                    auto p = (1 / (float)how_much * (i+1));
                     
-                        auto leaf_size = (leaf_size_max - leaf_size_min) * rand1f(rng) + leaf_size_min;
-                        
-                        frame3f leaf_frame;
-                        leaf_frame = frame_fromzx(leaf_position, frame.z, vec3f{X, Y, 0});
-                        auto random_rotation = rotation_frame(leaf_frame.x, rand1f(rng));
-                        
-                        leaf_frame.x = transform_vector(random_rotation, leaf_frame.x);
-                        leaf_frame.y = transform_vector(random_rotation, leaf_frame.y);
-                        leaf_frame.z = transform_vector(random_rotation, leaf_frame.z);
-                        
-                        make_quad_frame(leaf_quads, leaf_positions, leaf_normals, leaf_texcoords, leaf_size, leaf_frame);   
-                    }
+
+                    auto leaf_position = x + p * (x_ - x);
+                    
+                    
+                    p = rounds * pif * p ;
+                    float X = a_spiral * pow((double)e, k_spiral*p) * yocto::math::cos(p); 
+                    float Y = a_spiral * pow((double)e, k_spiral*p) * yocto::math::sin(p); 
+                
+                    auto leaf_size = (leaf_size_max - leaf_size_min) * rand1f(rng) + leaf_size_min;
+                    
+                    frame3f leaf_frame;
+                    leaf_frame = frame_fromzx(leaf_position, frame.z, vec3f{X, Y, 0});
+                    auto random_rotation = rotation_frame(leaf_frame.x, rand1f(rng));
+                    
+                    leaf_frame.x = transform_vector(random_rotation, leaf_frame.x);
+                    leaf_frame.y = transform_vector(random_rotation, leaf_frame.y);
+                    leaf_frame.z = transform_vector(random_rotation, leaf_frame.z);
+                    
+                    make_quad_frame(leaf_quads, leaf_positions, leaf_normals, leaf_texcoords, leaf_size, leaf_frame);   
                 }
+            }
         }
         
         
@@ -726,7 +747,7 @@ namespace yocto::extension
         auto final_scene = new model();
         std::cout << "Preparing and saving the models...\n";
         //Here, the output is a scene with multiple objects and a texture file for each object.
-        if(single_object == false)
+        if(single_object == 0)
         {
             //Generate the tree shape
             auto tree_shape = add_shape(final_scene);

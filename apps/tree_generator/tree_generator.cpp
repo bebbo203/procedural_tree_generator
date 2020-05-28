@@ -83,7 +83,7 @@ int main(int argc, const char* argv[])
       std::string multiple_modes_leaf_opacity_texture_path = "resources/exports/leaf_opacity_";
       //Remember to have a shapes and textures folder!
       std::string export_name_path = "resources/exports/albero.json";
-      bool single_object = true;
+      int single_object = 1;
 
 
   // ######################################
@@ -91,7 +91,7 @@ int main(int argc, const char* argv[])
 
     add_option(cli, "-o", export_name_path, "Output path");
     add_option(cli, "--node,-n", n_attractors, "Nodes number");
-    add_option(cli, "--f-generator,-f", f_selector, "0 for a sphere, 1 for a rotational solid, 2 for a cylinder");
+    add_option(cli, "--f-generator,-f", f_selector, "0 for a sphere, 1 for a rotational solid, 2 for a cone");
     add_option(cli, "--attractors_min,-m", attractors_range_min, "Attractors minium number");
     add_option(cli, "--attractors_max,-M", attractors_range_max, "Attractors max number");
     add_option(cli, "--z-offset,-z", attractors_z_offset, "Z offset of the cloud");
