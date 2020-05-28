@@ -105,12 +105,14 @@ All the resources are taken from [textures.com](http://textures.com)
     -n 1000 -b 1000 --trunk-length 1 -f 1 -z 0 -M 10 -m -10 -s 0 -t 1
 ![Tree N.2 ](img/2.png)
 
-This is a better scene (with directional lights) than the one in the previous commands with a closeup to show better how the leaves are arranged:
+
 
 ### Same rotational solid as before
 
 ![Oak ](img/quercia.jpg)
 ![Oak closeup](img/quercia_closeup.jpg)
+
+This is a better scene (with directional lights) than the one in the previous renders with a closeup to show better how the leaves are arranged.
 
 ### Example scene composed in Blender
 
