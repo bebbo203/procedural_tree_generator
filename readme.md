@@ -72,6 +72,8 @@ There are two things that needs a little bit of attention when building a tree f
 1. Is it possible to crash the program when chosing a trunk length that is not feasible: try a number that is divisible by *-D*
 1. *--influence-sphere* and *--killing-radius* are strictly dependant on the given cloud shape, yielding really ugly trees if set wrong.
 
+The run.sh helps by automatically generating a tree (loading the parameters from the tree_try.json) and displaying it using Yocto ysceneitrace.
+
 ### Leaves textures
 
 In every modality, the texture of every leaf has one constraint: it should be oriented rotated by 45° as in the following picture.
