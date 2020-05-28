@@ -2,7 +2,7 @@
 ## Roberto Aureli 1757131
 
 A space colonization based tool that generates tree of various types.
-The project is heavely based on [Yocto](https://github.com/xelatihy/yocto-gl) and follows the concept on the [Modeling Trees with a Space Colonization Algorithm](http://algorithmicbotany.org/papers/colonization.egwnp2007.large.pdf) paper.
+The project is heavely based on [Yocto/GL](https://github.com/xelatihy/yocto-gl) and follows the concept on the [Modeling Trees with a Space Colonization Algorithm](http://algorithmicbotany.org/papers/colonization.egwnp2007.large.pdf) paper.
 
 ___________________________________
 
