@@ -85,7 +85,7 @@ In every modality, the texture of every leaf has one constraint: it should be or
 ## Table of parameters
 | Option                    | Description |
 | ------                    | ----------- |
-|  -j                       | JSON configuration file with more parameters
+|  --json,-j                | JSON configuration file with more parameters
 |  -o                       | Output file path
 | -node, -n                 | Number of attractors
 | --f-generator, -f         | Selection of the generating function
