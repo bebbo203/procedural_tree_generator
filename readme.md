@@ -79,6 +79,7 @@ The run.sh helps by automatically generating a tree (loading the parameters from
 In every modality, the texture of every leaf has one constraint: it should be oriented rotated by 45° as in the following picture.
 
 ![Leaf texture](img/leaf_0.png)
+<img src="img/leaf_0.png" width="48">
 
 
 ## Table of parameters
