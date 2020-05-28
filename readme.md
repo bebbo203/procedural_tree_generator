@@ -136,6 +136,8 @@ This tree grows attracted by a set of attractors that are distributed in a plane
 ### Dwarf Maple
 ![Dwarf Maple](img/nano.png)
 
+This dwarf Maple is embedded in a cylinder and has three different types of leaves.
+
 ### Example scene composed in Blender
 
 Finally, to show how Yocto handles the exports of a generic shape, a Tree is exported in OBJ extension and then put in a scene with Blender
