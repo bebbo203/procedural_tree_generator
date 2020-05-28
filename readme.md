@@ -43,7 +43,7 @@ This mode helps with keeping everything in a compact way. A single texture is ma
 Following a clockwise disposition, the leaves textures need to be displaced in the right order to be taken by the software. 
 The first frame is for the trunk texture. 
 
-![Texture pattern](img/textures.png )
+<img src="img/textures.png" width="256">
 
 
 ### Multiple models mode
@@ -78,8 +78,8 @@ The run.sh helps by automatically generating a tree (loading the parameters from
 
 In every modality, the texture of every leaf has one constraint: it should be oriented rotated by 45° as in the following picture.
 
-![Leaf texture](img/leaf_0.png)
-<img src="img/leaf_0.png" width="48">
+
+<img src="img/leaf_0.png" width="256">
 
 
 ## Table of parameters
