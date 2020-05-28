@@ -19,7 +19,7 @@ Starting from a generic tree node, the growth direction is decided by the averag
 
 Every node is considered in the growing loop untile no more attractor are alive or a certain number of branches is reached.
 
-Initially a branch is a line that is then evolved to a mesh. The latter is a cylinder with an emisphere at the top used to fill the "holes" in the meshes that can be caused by the high angle of attacl of two adiacent branches.\
+Initially a branch is a line that is then evolved to a mesh. The latter is a cylinder with an emisphere at the top used to fill the "holes" in the meshes that can be caused by the high angle of attack between two adiacent branches.\
 The width of a branch is given by the *Da Vinci's formula* that put in relations the n-th power of the width of a parent branch to the n-th power of the widths of the childs. \
 To keep track of every width, a matrix is built after traversing all the tree.\
 A further loop is finally executed along all the final branches to add leaves following a *Logaritmic Spiral Distribution*.
