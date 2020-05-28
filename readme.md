@@ -72,6 +72,11 @@ There are two things that needs a little bit of attention when building a tree f
 1. Is it possible to crash the program when chosing a trunk length that is not feasible: try a number that is divisible by *-D*
 1. *--influence-sphere* and *--killing-radius* are strictly dependant on the given cloud shape, yielding really ugly trees if set wrong.
 
+### Leaves textures
+
+In every modality, the texture of every leaf has one constraint: it should be oriented rotated by 45° as in the following picture.
+
+![Leaf texture](img/leaf_0.png)
 
 
 ## Table of parameters
@@ -120,6 +125,16 @@ All the resources are taken from [textures.com](http://textures.com)
 ![Oak closeup](img/quercia_closeup.jpg)
 
 This is a better scene (with directional lights) than the one in the previous renders with a closeup to show better how the leaves are arranged.
+
+### A tree climbing a wall
+![Climbing](img/wall_1.png)
+![Climbing](img/wall_tree_2.png)
+
+This tree grows attracted by a set of attractors that are distributed in a plane (with a minimal width)
+
+
+### Dwarf Maple
+![Dwarf Maple](img/nano.png)
 
 ### Example scene composed in Blender
 

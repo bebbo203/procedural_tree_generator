@@ -121,7 +121,7 @@ int main(int argc, const char* argv[])
 
     if(configuration_path != "")
     {
-        std::ifstream fs("configuration.json");
+        std::ifstream fs(configuration_path);
         json j;
         fs >> j;
         std::cout << "Loading configuration file... \n";
@@ -153,9 +153,10 @@ int main(int argc, const char* argv[])
         multiple_mode_leaf_texture_path = j["multiple_mode_leaf_texture_path"];
         multiple_mode_leaf_opacity_texture_path = j["multiple_mode_leaf_opacity_texture_path"];
         single_object = j["single_object"];
+        std::cout << j.dump() << "\n";
     }   
     
-
+    
     
     yocto::extension::generate_tree(n_attractors, attractors_range_min, attractors_range_max, attractors_z_offset,
         tree_starting_point, trunk_length, max_nodes, D, W, max_width,

@@ -323,8 +323,18 @@ namespace yocto::extension
             }
             else if (f_selector == 2)
             {
-                //if(10 > pow(p.x , 2.0) + pow(p.y, 2.0) && p.z > 0 && p.z < 10)
                 if(p.z > 0 && p.z < -sqrt(pow(p.x, 2.0) + pow(p.y, 2.0)) * 2 + z_offset)
+                {          
+                    p.z += 2;
+                    cloud += p;
+                    
+                }
+                else
+                    i -= 1; 
+            }
+            else if (f_selector == 3)
+            {
+                if(p.z > 0 && p.x > -0.5 && p.x < 0.5)
                 {          
                     cloud += p;
                 }
@@ -493,8 +503,8 @@ namespace yocto::extension
         
         // A loop that generates the trunk of the tree, approximating the initial value given by the user 
         // (Large approximation to avoid an infinite loop)
-        float dist = 9999;
-        while(dist > D/4)
+        float dist = D * 2;
+        while(dist > D)
         {
             auto a = trunk_length;
             auto b = nodes_positions[tree_nodes.size()-1];
@@ -875,8 +885,8 @@ namespace yocto::extension
 
         //Simple camera
         auto cam = add_camera(final_scene);
-        auto camera_frame = lookat_frame(vec3f{-10, 2, 1}, vec3f{1,1,1}, vec3f{0,0,1});
-        cam->frame = frame3f{identity3x3f, vec3f{0,1.92,8.6}};
+        cam->frame = frame3f{identity3x3f, vec3f{0,2,15}};
+        
         
         
         //Simple environment 
