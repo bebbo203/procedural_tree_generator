@@ -25,6 +25,7 @@ A further loop is finally executed along all the final branches to add leaves fo
 ## Usage
 
 There is a plenty of parameters to decide the shape of a generic tree so, for the command line interface, only a little part of them is editable by the user (while in the main function everything is editable and commented to fine tune the tree).
+Thanks to Yocto, there are two possible format to export the tree and the selection is really easy: just set *-o* path name extension to *.json* or *.obj* . With the JSON format the scene is populated with PLY objects.
 
 ### Single model mode
 
@@ -33,6 +34,7 @@ There is a plenty of parameters to decide the shape of a generic tree so, for th
 This mode helps with keeping everything in a compact way. A single texture is mapped over the trunk and the leaves giving the possibility to use up to 3 differents textures for the latter.
 Following a clockwise disposition, the leaves textures need to be displaced in the right order to be taken by the software. 
 The first frame is for the trunk texture. 
+![Texture pattern](img/textures.png )
 
 
 ### Multiple models mode
@@ -55,3 +57,28 @@ Example:
 >>     -s false --m-trunk-texture "./trunk" --m-leaves-textures "./leaf_" --m-leaves-textures-opacity "./leaf_opacity_" -t 2 ...
 
 Make sure to map exactly the index of the color texture to the one of the opacity texture.
+
+There are two things that needs a little bit of attention when building a tree from scratches: 
+1. Make sure that at least one attractor from the attractors cloud is within the *--influence-sphere* from the trunk
+1. Is it possible to crash the program when chosing a trunk length that is not feasible: try a number that is divisible by *-D*
+1. *--influence-sphere* and *--killing-radius* are strictly dependant on the given cloud shape, yielding really ugly trees if set wrong.
+
+## Examples
+
+These are some trees build with the tree_generator and rendered with Yocto.
+All the resources are taken from [textures.com](http://textures.com)
+
+    -n 10000 -b 5000 --trunk-length 3 -f 0 -z 5 -M 10 -m -10
+![Tree N.1 ](img/1.png)
+
+    -n 1000 -b 1000 --trunk-length 1 -f 1 -z 0 -M 10 -m -10 -s 0 -t 1
+![Tree N.2 ](img/2.png)
+
+This is a better scene (with directional lights) than the one in the previous commands with a closeup to show better how the leaves are arranged:
+
+![Oak ](img/quercia.jpg)
+![Oak closeup](img/quercia_closeup.jpg)
+
+Finally, to show how Yocto handles the exports of a generic shape, a Tree is exported in OBJ extension and then put in a scene with Blender:
+
+![Blender scene](img/render.png)
