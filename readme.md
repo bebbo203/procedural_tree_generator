@@ -30,6 +30,11 @@ There is a plenty of parameters to decide the shape of a generic tree so, for th
 Thanks to Yocto, there are two possible format to export the tree and the selection is really easy: just set *-o* path name extension to *.json* or *.obj* . With the JSON format the scene is populated with PLY objects.\
 Make sure that the folder in which you want to save already exists.
 
+### JSON settings
+
+It is possible to set several parameters from the CLI. However, if you want to fine tune your tree, you can call the program with the *-j* (or *--json*) option and add the path to a *json* configuration file. 
+The file *configuration.json* can be used as a skeleton.
+
 ### Single model mode
 
     -s true -t < 1|2|3 > --s-textures <path> --s-textures-opacity <path> ...
@@ -66,6 +71,8 @@ There are two things that needs a little bit of attention when building a tree f
 1. Make sure that at least one attractor from the attractors cloud is within the *--influence-sphere* from the trunk
 1. Is it possible to crash the program when chosing a trunk length that is not feasible: try a number that is divisible by *-D*
 1. *--influence-sphere* and *--killing-radius* are strictly dependant on the given cloud shape, yielding really ugly trees if set wrong.
+
+
 
 ## Table of parameters
 | Option                    | Description |
