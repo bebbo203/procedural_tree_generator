@@ -4,6 +4,8 @@
 A space colonization based tool that generates tree of various types.
 The project is heavely based on [Yocto](https://github.com/xelatihy/yocto-gl) and follows the concept on the [Modeling Trees with a Space Colonization Algorithm](http://algorithmicbotany.org/papers/colonization.egwnp2007.large.pdf) paper.
 
+___________________________________
+
 ## Implementation
 
 Following the Yocto philosophy, a tree is seen as a Shape.
@@ -63,21 +65,52 @@ There are two things that needs a little bit of attention when building a tree f
 1. Is it possible to crash the program when chosing a trunk length that is not feasible: try a number that is divisible by *-D*
 1. *--influence-sphere* and *--killing-radius* are strictly dependant on the given cloud shape, yielding really ugly trees if set wrong.
 
+### Table of parameters
+| Option                    | Description |
+| ------                    | ----------- |
+|  -o                       | Output file path
+| -node, -n                 | Number of attractors
+| --f-generator, -f         | Selection of the generating function
+|--attractors_min, -m       | Attractors position lowerbound
+|--attractors_max, -M       | Attractors position upperbound
+|--z-offset, -z             | Offset on the z axis of the attractors
+|--trunk-length             | Where the trunk will end and branches will begin
+|--max-branches, -b         | Maxium number of different branches
+|--branches-length, -l      | Lenght of a single branch
+|--influence-sphere, -d     | Dimension of the influence sphere
+|--killing-radius, -k       | Killing radius 
+|--single-object, -s        | Single mode selector 
+|--m-trunk-texture          | Path of the trunk texture in multi mode
+|--m-leaves-textures        | Path of the leaves textures in multi mode
+|--m-leaves-textures-opacity| Path of the leaves opacity textures in multi mode
+|--s-textures               | Path of the texture in single mode
+|--s-textures-opacity       | Path of the opacity texture in single mode
+|--leaves-textures, -t      | Number of different leaves texture (max 3 for single mode)
+|--leaves-max-dim           | Upperbound of the leaves dimension (0 for no leaves on the tree)
+
 ## Examples
 
 These are some trees build with the tree_generator and rendered with Yocto.
 All the resources are taken from [textures.com](http://textures.com)
 
+### Spherical tree 
+
     -n 10000 -b 5000 --trunk-length 3 -f 0 -z 5 -M 10 -m -10
 ![Tree N.1 ](img/1.png)
+
+### Strange rotational solid tree
 
     -n 1000 -b 1000 --trunk-length 1 -f 1 -z 0 -M 10 -m -10 -s 0 -t 1
 ![Tree N.2 ](img/2.png)
 
 This is a better scene (with directional lights) than the one in the previous commands with a closeup to show better how the leaves are arranged:
 
+### Same rotational solid as before
+
 ![Oak ](img/quercia.jpg)
 ![Oak closeup](img/quercia_closeup.jpg)
+
+### Example scene composed in Blender
 
 Finally, to show how Yocto handles the exports of a generic shape, a Tree is exported in OBJ extension and then put in a scene with Blender:
 
