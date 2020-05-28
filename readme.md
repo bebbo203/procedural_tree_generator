@@ -116,6 +116,7 @@ This is a better scene (with directional lights) than the one in the previous re
 
 ### Example scene composed in Blender
 
-Finally, to show how Yocto handles the exports of a generic shape, a Tree is exported in OBJ extension and then put in a scene with Blender:
+Finally, to show how Yocto handles the exports of a generic shape, a Tree is exported in OBJ extension and then put in a scene with Blender
+(Environment texture taken from [HDRIhaven](https://hdrihaven.com/):
 
 ![Blender scene](img/render.png)
