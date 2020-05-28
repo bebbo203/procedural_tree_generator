@@ -2,8 +2,11 @@
 #include <yocto_extension/yocto_extension.h>
 #include <yocto/yocto_math.h>
 #include <yocto/yocto_commonio.h>
+#include <yocto/ext/json.hpp>
+#include <fstream>
 using namespace yocto::math;
 using namespace yocto::commonio;
+using json = nlohmann::json;
 
 
 int main(int argc, const char* argv[])
@@ -79,16 +82,18 @@ int main(int argc, const char* argv[])
       std::string single_mode_opacity_texture_path = "resources/exports/tree_opacity.png";
       // Multiple object mode textures
       std::string multiple_mode_tree_texture_path = "resources/exports/wood.png";
-      std::string multiple_modes_leaf_texture_path = "resources/exports/leaf_";
-      std::string multiple_modes_leaf_opacity_texture_path = "resources/exports/leaf_opacity_";
+      std::string multiple_mode_leaf_texture_path = "resources/exports/leaf_";
+      std::string multiple_mode_leaf_opacity_texture_path = "resources/exports/leaf_opacity_";
       //Remember to have a shapes and textures folder!
       std::string export_name_path = "resources/exports/albero.json";
       int single_object = 1;
-
+      //Load configuration from JSON file
+      std::string configuration_path = "";
 
   // ######################################
     float trunk_z = 1;
 
+    add_option(cli, "--json,-j", configuration_path, "JSON configuration file path");
     add_option(cli, "-o", export_name_path, "Output path");
     add_option(cli, "--node,-n", n_attractors, "Nodes number");
     add_option(cli, "--f-generator,-f", f_selector, "0 for a sphere, 1 for a rotational solid, 2 for a cone");
@@ -102,8 +107,8 @@ int main(int argc, const char* argv[])
     add_option(cli, "--killing-radius,-k", max_influence_sphere, "Min distance for an attractor from a branch");
     add_option(cli, "--single-object,-s", single_object, "Single object mode");
     add_option(cli, "--m-trunk-texture",  multiple_mode_tree_texture_path, "Multiple mode trunk texture path");
-    add_option(cli, "--m-leaves-textures",  multiple_modes_leaf_texture_path, "Multiple mode leaves texture path");
-    add_option(cli, "--m-leaves-textures-opacity",  multiple_modes_leaf_opacity_texture_path, "Multiple mode leaves opacity_texture path");
+    add_option(cli, "--m-leaves-textures",  multiple_mode_leaf_texture_path, "Multiple mode leaves texture path");
+    add_option(cli, "--m-leaves-textures-opacity",  multiple_mode_leaf_opacity_texture_path, "Multiple mode leaves opacity_texture path");
     add_option(cli, "--s-textures",  single_mode_texture_path, "Single mode texture");
     add_option(cli, "--s-textures-opacity",  single_mode_opacity_texture_path, "Single mode opacity_texture");
     add_option(cli, "--leaves-textures,-t", leaves_textures_number, "Number of differents textures for leaves");
@@ -114,13 +119,51 @@ int main(int argc, const char* argv[])
     
     trunk_length.z = trunk_z;
 
+    if(configuration_path != "")
+    {
+        std::ifstream fs("configuration.json");
+        json j;
+        fs >> j;
+        std::cout << "Loading configuration file... \n";
+        n_attractors = j["n_attractors"];
+        attractors_range_min = j["attractors_range_min"];
+        attractors_range_max = j["attractors_range_max"];
+        attractors_z_offset = j["attractors_z_offset"];
+        f_selector = j["f_selector"];
+        tree_starting_point = vec3f{j["tree_starting_point"][0], j["tree_starting_point"][1], j["tree_starting_point"][2]} ;
+        trunk_length = vec3f{j["trunk_length"][0],j["trunk_length"][1],j["trunk_length"][2]};
+        max_nodes = j["max_nodes"];
+        D = j["D"];
+        W = j["W"];
+        max_width = j["max_width"];
+        max_influence_sphere = j["max_influence_sphere"];
+        max_killing_radius  = j["max_killing_radius"];
+        tropism = vec3f{j["tropism"][0], j["tropism"][1], j["tropism"][2]} ;
+        leaves_density_max = j["leaves_density_max"];
+        leaves_density_min = j["leaves_density_min"];
+        leaf_size_max = j["leaf_size_max"];
+        leaf_size_min = j["leaf_size_min"];
+        a_spiral = j["a_spiral"];
+        k_spiral = j["k_spiral"];
+        rounds = j["rounds"];
+        leaves_textures_number = j["leaves_textures_number"];
+        single_mode_texture_path = j["single_mode_texture_path"];
+        single_mode_opacity_texture_path = j["single_mode_opacity_texture_path"];
+        multiple_mode_tree_texture_path = j["multiple_mode_tree_texture_path"];
+        multiple_mode_leaf_texture_path = j["multiple_mode_leaf_texture_path"];
+        multiple_mode_leaf_opacity_texture_path = j["multiple_mode_leaf_opacity_texture_path"];
+        single_object = j["single_object"];
+    }   
+    
+
+    
     yocto::extension::generate_tree(n_attractors, attractors_range_min, attractors_range_max, attractors_z_offset,
         tree_starting_point, trunk_length, max_nodes, D, W, max_width,
         max_influence_sphere, max_killing_radius, tropism, leaves_density_min, leaves_density_max,
         leaf_size_max, leaf_size_min, a_spiral, k_spiral, e, rounds, leaves_textures_number,
         single_object, single_mode_texture_path, single_mode_opacity_texture_path,
-        multiple_mode_tree_texture_path, multiple_modes_leaf_texture_path, 
-        multiple_modes_leaf_opacity_texture_path, export_name_path, f_selector);
+        multiple_mode_tree_texture_path, multiple_mode_leaf_texture_path, 
+        multiple_mode_leaf_opacity_texture_path, export_name_path, f_selector);
 
     return 0;
 }
