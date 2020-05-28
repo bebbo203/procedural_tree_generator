@@ -27,7 +27,8 @@ A further loop is finally executed along all the final branches to add leaves fo
 ## Usage
 
 There is a plenty of parameters to decide the shape of a generic tree so, for the command line interface, only a little part of them is editable by the user (while in the main function everything is editable and commented to fine tune the tree).
-Thanks to Yocto, there are two possible format to export the tree and the selection is really easy: just set *-o* path name extension to *.json* or *.obj* . With the JSON format the scene is populated with PLY objects.
+Thanks to Yocto, there are two possible format to export the tree and the selection is really easy: just set *-o* path name extension to *.json* or *.obj* . With the JSON format the scene is populated with PLY objects.\
+Make sure that the folder in which you want to save already exists.
 
 ### Single model mode
 
@@ -36,6 +37,7 @@ Thanks to Yocto, there are two possible format to export the tree and the select
 This mode helps with keeping everything in a compact way. A single texture is mapped over the trunk and the leaves giving the possibility to use up to 3 differents textures for the latter.
 Following a clockwise disposition, the leaves textures need to be displaced in the right order to be taken by the software. 
 The first frame is for the trunk texture. 
+
 ![Texture pattern](img/textures.png )
 
 
@@ -53,7 +55,7 @@ Example:
 >>leaf_0.png\
 >>leaf_1.png\
 >>leaf_opacity_0.png\
->>leaf_opacity_1.png\
+>>leaf_opacity_1.png
 
 > Parameters:
 >>     -s false --m-trunk-texture "./trunk" --m-leaves-textures "./leaf_" --m-leaves-textures-opacity "./leaf_opacity_" -t 2 ...
@@ -65,7 +67,7 @@ There are two things that needs a little bit of attention when building a tree f
 1. Is it possible to crash the program when chosing a trunk length that is not feasible: try a number that is divisible by *-D*
 1. *--influence-sphere* and *--killing-radius* are strictly dependant on the given cloud shape, yielding really ugly trees if set wrong.
 
-### Table of parameters
+## Table of parameters
 | Option                    | Description |
 | ------                    | ----------- |
 |  -o                       | Output file path
