@@ -12,7 +12,7 @@ Following the Yocto philosophy, a tree is seen as a Shape.
 Starting from a point given by the user, the branches grow to reach a  cloud of attractors (points) scattered in the space following a known rule.\
 Contrarily to the paper, Voronoi's set are not used but, for semplicity (at cost of performances), only a distance function is taken from Yocto to map the set of active attractors with respect to a growing branch.
 
-An attractor is *active* when it's sphere of influence contains a tree node that is growing.\
+An attractor is *active* when its sphere of influence contains a tree node that is growing.\
 An attractor is *dead* (and then removed from the cloud) when it's under a certain distance from a node.
 
 Starting from a generic tree node, the growth direction is decided by the average of the positions of active attractors in regard to that node. The length is a parameter.
