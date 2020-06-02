@@ -124,7 +124,7 @@ int main(int argc, const char* argv[])
         std::ifstream fs(configuration_path);
         json j;
         fs >> j;
-        std::cout << "Loading configuration file... \n";
+        std::cout << "Loading configuration file... \n\n";
         n_attractors = j["n_attractors"];
         attractors_range_min = j["attractors_range_min"];
         attractors_range_max = j["attractors_range_max"];
@@ -153,7 +153,7 @@ int main(int argc, const char* argv[])
         multiple_mode_leaf_texture_path = j["multiple_mode_leaf_texture_path"];
         multiple_mode_leaf_opacity_texture_path = j["multiple_mode_leaf_opacity_texture_path"];
         single_object = j["single_object"];
-        std::cout << j.dump() << "\n";
+        std::cout << j.dump() << "\n\n";
     }   
     
     

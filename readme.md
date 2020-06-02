@@ -27,13 +27,13 @@ A further loop is finally executed along all the final branches to add leaves fo
 ## Usage
 
 There is a plenty of parameters to decide the shape of a generic tree so, for the command line interface, only a little part of them is editable by the user (while in the main function everything is editable and commented to fine tune the tree).
-Thanks to Yocto, there are two possible format to export the tree and the selection is really easy: just set *-o* path name extension to *.json* or *.obj* . With the JSON format the scene is populated with PLY objects.\
+Thanks to Yocto, there are two possible format to export the tree and the selection is really easy: just set *-o* <path name extension> to *.json* or *.obj* . With the JSON format the scene is populated with PLY objects.\
 Make sure that the folder in which you want to save already exists.
 
 ### JSON settings
 
 It is possible to set several parameters from the CLI. However, if you want to fine tune your tree, you can call the program with the *-j* (or *--json*) option and add the path to a *json* configuration file. 
-The file *configuration.json* can be used as a skeleton.
+The file *configuration.json* contains all the parameters.
 
 ### Single model mode
 
@@ -82,7 +82,7 @@ In every modality, the texture of every leaf has one constraint: it should be or
 <img src="img/leaf_0.png" width="256">
 
 
-## Table of parameters
+## Table of CLI parameters
 | Option                    | Description |
 | ------                    | ----------- |
 |  --json,-j                | JSON configuration file with more parameters
@@ -105,6 +105,78 @@ In every modality, the texture of every leaf has one constraint: it should be or
 |--s-textures-opacity       | Path of the opacity texture in single mode
 |--leaves-textures, -t      | Number of different leaves texture (max 3 for single mode)
 |--leaves-max-dim           | Upperbound of the leaves dimension (0 for no leaves on the tree)
+
+## List of all the parameters
+```cpp
+    // SHAPE PARAMETERS
+        // Number of points to be included in the general shape
+        int n_attractors;
+        // Dimensions of the cube in which n_points attractors will be generated
+        int attractors_range_min;
+        int attractors_range_max;
+        // Offset in the Z direction of the initial cube of points
+        int attractors_z_offset;
+        // Type of function to be used to generate the cloud
+        int f_selector;
+    // TREE PARAMETERS
+        // Point in wich the tree will start to grow
+        vec3f tree_starting_point;
+        // Approximated point in wich the trunk will start to grow branches (trunk position)
+        vec3f trunk_length;
+        // Max number of tree nodes
+        int max_nodes; 
+        // Length of a generic branch
+        float D;
+        // Min width of a branch
+        float W;
+        // Max width of a branch, 50 is a good value (not in the same scale of W, it's just a constant that will be multiplied by W)
+        float max_width;
+        // Attractor inluence shpere
+        float max_influence_sphere;
+        // Attractor kill distance from a branch
+        float max_killing_radius;
+        //Eventual tropism (deformation or gravity) of a branch
+        vec3f tropism;
+    // LEAVES PARAMETERS
+        // Min number of leaves in a single branch of lenght D
+        int leaves_density_min;
+        // Max number of leaves in a single branch of length D
+        int leaves_density_max;
+        // Max size of a leaf
+        float leaf_size_max;
+        // Min size of a leaf
+        float leaf_size_min;
+        // The following are 4 parameters of the logaritmic spiral used for distributing the leaves. 
+        float a_spiral;
+        float k_spiral;
+        float e;
+        float rounds;
+    // Texture parameters
+        // Number of differents leaves
+        int leaves_textures_number;
+        // For the texture, if you are using single object mode, don't worry. 
+        // If you are using the multiple object mode, call the leaf texture with a index that start from 0 at the end.
+        // For example:
+            // leaf_texture_0.png
+            // leaf_opacity_texture_0.png
+            // leaf_texture_1.png
+            // leaf_opacity_texture_1.png
+        // And pass the path WITHOUT numbers and extension (hopefully a png)
+            // leaf_texture_
+            // leaf_opacity_texture_
+        // Single object mode texture
+        std::string single_mode_texture_path;
+        std::string single_mode_opacity_texture_path;
+        // Multiple object mode textures
+        std::string multiple_mode_tree_texture_path;
+        std::string multiple_mode_leaf_texture_path;
+        std::string multiple_mode_leaf_opacity_texture_path;
+        //Remember to have a shapes and textures folder!
+        std::string export_name_path;
+        int single_object;
+        //Load configuration from JSON file
+        std::string configuration_path;
+```
 
 ## Examples
 

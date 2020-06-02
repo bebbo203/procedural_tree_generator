@@ -40,6 +40,7 @@
 #include <yocto/yocto_sceneio.h>
 #include <yocto/yocto_shape.h>
 #include <math.h>
+#include <ctime>
 using namespace std::string_literals;
 using namespace yocto::math;
 using namespace yocto::shape;
@@ -352,7 +353,10 @@ namespace yocto::extension
         std::string error;
         auto img = yocto::image::image<vec3b>();
         if(!yocto::image::load_image(img_path, img, error))
-            std::cout << "image load error: " << error << "\n";
+        {
+          std::cout << "\nimage load error: " << error << "\n";
+          exit(1);
+        }
         return img;
     }
 
@@ -361,7 +365,10 @@ namespace yocto::extension
         std::string error;
         auto img = yocto::image::image<byte>();
         if(!yocto::image::load_image(img_path, img, error))
-            std::cout << "image load error: " << error << "\n";
+        {    
+            std::cout << "\nimage load error: " << error << "\n";
+            exit(1);
+        }
         return img;
     }
 
@@ -385,7 +392,7 @@ namespace yocto::extension
       std::string multiple_modes_leaf_opacity_texture_path,  std::string export_name_path, int f_selector)
     {
         
-
+        auto START_TIME = clock();
         std::vector<vec4i> quads, leaf_quads, tree_quads; 
         std::vector<vec3f> positions, nodes_positions, leaf_positions, tree_positions;
         std::vector<vec3f> normals, leaf_normals, tree_normals;
@@ -469,30 +476,10 @@ namespace yocto::extension
 
         //Cloud generation
         rng_state rng = make_rng(54);
-        std::cout << "Generating attractors...\n";
+        std::cout << "Generating attractors... ";
         std::vector<vec3f> cloud = attractors_generator(n_attractors, attractors_range_min, attractors_range_max , attractors_z_offset,  f, rng, f_selector);
+        std::cout << (clock() - START_TIME) / (double)CLOCKS_PER_SEC << "s\n";
         
-        //////////////////////////////////
-        /*
-        positions = cloud;
-        for(auto x: positions)
-            points += (int)points.size();
-
-        std::vector<vec3i> tri;
-        std::vector<vec4i> quad;
-        std::vector<vec3f> colo;
-        std::vector<float> r;
-        std::string efr;
-        bool xwaa = save_shape("resources/exports/points.obj", points, lines, tri , quad , positions, normals, texcoords, colo, r, efr);
-
-        return;
-        */
-        
-
-
-
-
-        /////////////////////////////////
 
         nodes_positions += tree_starting_point;
         tree_nodes += 0;
@@ -521,8 +508,8 @@ namespace yocto::extension
         }
 
         auto forbidden_node = (int)tree_nodes.size() - 1;
-        
-        std::cout << "Growing the tree...\n";
+        auto GROW_TIME = clock();
+        std::cout << "Growing the tree... ";
         while(tree_nodes.size() < max_nodes)
         {
             
@@ -595,8 +582,9 @@ namespace yocto::extension
         
             width_vector[l[0]][l[1]] = t > max_width ? max_width : t;
         }
-
-        std::cout << "Building the meshes...\n";
+        std::cout << (clock() - GROW_TIME) / (double)CLOCKS_PER_SEC << "s\n";
+        auto MESH_TIME = clock();
+        std::cout << "Building the meshes... ";
         frame3f frame;
         for(auto l: lines)
         {
@@ -744,7 +732,7 @@ namespace yocto::extension
         }
         
         
-        
+        std::cout << (clock() - MESH_TIME) / (double)CLOCKS_PER_SEC << "s\n";
         std::cout << "Positions: " << tree_positions.size() << "\n";
         std::cout << "Points:    " << points.size() << "\n";
         std::cout << "Lines:     " << lines.size() << "\n";
@@ -755,7 +743,8 @@ namespace yocto::extension
         //Scene preparation
 
         auto final_scene = new model();
-        std::cout << "Preparing and saving the models...\n";
+        auto SAVE_TIME = clock();
+        std::cout << "Preparing and saving the models... ";
         //Here, the output is a scene with multiple objects and a texture file for each object.
         if(single_object == 0)
         {
@@ -895,8 +884,10 @@ namespace yocto::extension
         
         // If you save in json it will have an opacity texture
         bool ok = save_scene(export_name_path, final_scene, error);
-        
+        std::cout << (clock() - SAVE_TIME) / (double)CLOCKS_PER_SEC << "s\n";
 
+
+        std::cout << "Total elapsed time: " << (clock() - START_TIME) / (double)CLOCKS_PER_SEC << "s\n";
         
 
         if(error == "")
