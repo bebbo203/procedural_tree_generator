@@ -178,6 +178,26 @@ In every modality, the texture of every leaf has one constraint: it should be or
         std::string configuration_path;
 ```
 
+## Performances
+
+The code is not time optimized: it's a non-parallel implementation with simple math concepts, excluding structures (like Voronoi's) that could have improved the execution.
+Nevertheless, even for a big tree, the time elapsed is accetable.
+In the following table, a series of examples shows the time used to build and save the tree.
+All the tree shares the same parameters but not the same number of branches.
+With 10000 attractors: 
+
+| Tree Branches | Single Mode | Multi Mode |
+| ------------- | ----------- | ---------- |
+| 500           | 0.2784s     | 0.4762s    |
+| 2500          | 0.8008s     | 0.9821s    |
+| 3309          | 1.0681s     | 1.2493s    |
+| 5000*         | 6.0347s     | 6.2874s    |
+
+*Limit of 3309 branches reached beacuse all the attractors were destroyed.
+To reach 5000 branches is necessary to increase drammatically the number of attractors (from 10000 to 75000), hence the big time jump.
+Note that the attractors generation process, even with 75000 attractors, took no more than 0.02 seconds.
+
+
 ## Examples
 
 These are some trees build with the tree_generator and rendered with Yocto.
