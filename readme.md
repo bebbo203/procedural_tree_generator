@@ -9,31 +9,31 @@ ___________________________________
 ## Implementation
 
 Following the Yocto philosophy, a tree is seen as a Shape.
-Starting from a point given by the user, the branches grow to reach a  cloud of attractors (points) scattered in the space following a known rule.\
+Starting from a point given by the user, the branches grow to reach a cloud of attractors (points) scattered in the space following a known rule.\
 Contrarily to the paper, Voronoi's set are not used but, for semplicity (at cost of performances), only a distance function is taken from Yocto to map the set of active attractors with respect to a growing branch.
 
-An attractor is *active* when its sphere of influence contains a tree node that is growing.\
+An attractor is *active* when its sphere of influence contains a tree node.\
 An attractor is *dead* (and then removed from the cloud) when it's under a certain distance from a node.
 
 Starting from a generic tree node, the growth direction is decided by the average of the positions of active attractors in regard to that node. The length is a parameter.
 
-Every node is considered in the growing loop untile no more attractor are alive or a certain number of branches is reached.
+Every node is considered in the growing loop until no more attractors are alive or a certain number of branches is reached.
 
 Initially a branch is a line that is then evolved to a mesh. The latter is a cylinder with an emisphere at the top used to fill the "holes" in the meshes that can be caused by the high angle of attack between two adiacent branches.\
-The width of a branch is given by the *Da Vinci's formula* that put in relations the n-th power of the width of a parent branch to the n-th power of the widths of the childs. \
+The width of a branch is given by the *Da Vinci's formula* that puts in relation the n-th power of the width of a parent branch to the n-th power of the widths of the childs. \
 To keep track of every width, a matrix is built after traversing all the tree.\
 A further loop is finally executed along all the final branches to add leaves following a *Logaritmic Spiral Distribution*.
 
 ## Usage
 
-There is a plenty of parameters to decide the shape of a generic tree so, for the command line interface, only a little part of them is editable by the user (while in the main function everything is editable and commented to fine tune the tree).
-Thanks to Yocto, there are two possible format to export the tree and the selection is really easy: just set *-o* <path name extension> to *.json* or *.obj* . With the JSON format the scene is populated with PLY objects.\
+There is a plenty of parameters to decide the shape of a generic tree so, for the command line interface, only a little part of them is editable by the user (while in the main function and in the JSON everything is editable and commented to fine tune the tree).
+Thanks to Yocto, there are two possible format to export the tree and the selection is really easy: just set *-o* <path name extension> to *.json* or *.obj* .\ With the JSON format the scene is populated with PLY objects.\
 Make sure that the folder in which you want to save already exists.
 
 ### JSON settings
 
 It is possible to set several parameters from the CLI. However, if you want to fine tune your tree, you can call the program with the *-j* (or *--json*) option and add the path to a *json* configuration file. 
-The file *configuration.json* contains all the parameters.
+The file *configuration.json* contains all the parameters availables.
 
 ### Single model mode
 
@@ -50,8 +50,8 @@ The first frame is for the trunk texture.
 
     -s false --m-trunk-texture <path> --m-leaves-textures <path> --m-leaves-textures-opacity <path> -t <N> 
 
-With multiple models, the generator will return one object for the trunk and *N* different objects for the leaves. Every leaves object is mapped to one of the *N* textures.\
-There are some rules to follow to build a tree with this modality regarding the naming of the leaves textures.\
+With multiple models, the generator will return one object for the trunk and *N* different objects for the leaves. Every leaf object is randomically mapped to one of the *N* textures.\
+There are some rules to follow to build a tree with this mode regarding the naming of the leaves textures.\
 Name the texture with a final number that starts from 0 and goes to *N*-1 but does not include it in the *--m-leaves-textures* and *--m-leaves-textures-opacity* paths.\
 Example:
 
@@ -69,7 +69,7 @@ Make sure to map exactly the index of the color texture to the one of the opacit
 
 There are two things that needs a little bit of attention when building a tree from scratches: 
 1. Make sure that at least one attractor from the attractors cloud is within the *--influence-sphere* from the trunk
-1. Is it possible to crash the program when chosing a trunk length that is not feasible: try a number that is divisible by *-D*
+1. Is it possible to crash the program when chosing a *trunk length* that is not feasible: try a number that is divisible by *-D*
 1. *--influence-sphere* and *--killing-radius* are strictly dependant on the given cloud shape, yielding really ugly trees if set wrong.
 
 The run.sh helps by automatically generating a tree (loading the parameters from the tree_try.json) and displaying it using Yocto ysceneitrace.
